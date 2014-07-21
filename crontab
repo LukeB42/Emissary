@@ -1,0 +1,4 @@
+db_limit 5g
+# url                           name    minute  hour    day     month   weekday
+http://news.ycombinator.com     'HN'    0       3!      *       *       *
+
