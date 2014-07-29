@@ -1,6 +1,6 @@
-import gevent, requests, feedparser
+import gevent, requests, feedparser,time
 from Article import Article
-from Utils import uid, tconv
+from Utils import e, uid, tconv, Parser
 from Cron import parse_timings
 
 class FeedError(Exception):
@@ -18,8 +18,7 @@ class Feed(object):
 		self.db = db
 		self.log = log
 		self.config = config
-		# config is optional to simplify creating Feed objects in the REPL.
-		if self.config:
+		if self.config: # optional to simplify creating in REPL.
 			self.t = db[config['feed_table']]
 		else:
 			self.t = db[table]
@@ -118,10 +117,6 @@ class Feed(object):
 					for t in self.threads:
 						t.kill()
 						self.threads.remove(t)
-				tp = gevent.hub.Hub.threadpool
-				print dir(tp)
-				print tp
-				# Sometimes fetches are still running for articles that are already stored.
 			if self.config['no_fetching']:
 				self.log("%s: Database has reached 100" % self.feed['name'] + "% capacity.",'error')
 				if self.fm:
@@ -139,32 +134,43 @@ class Feed(object):
 		else:
 			self.h={'User-Agent':'Emissary'}
 		r = requests.get(self.feed['url'],headers=self.h)
-		# TODO: if not 'xml' in r.headers['content-type']: f = Utils.build_relevant_links(url)
-		f = feedparser.parse(r.text)
-		for e in f.entries:
-			self.threads.append(gevent.spawn(self.fetch,e))
-		if len(self.threads) > len(f.entries):
+		urls=[]
+		if ('content-type' in r.headers.keys()) and ('xml' in r.headers['content-type']):
+			f = feedparser.parse(r.text)
+			for entry in f.entries:
+				urls.append(entry.link)
+				self.threads.append(gevent.spawn(self.fetch,entry))
+		else: # The following is a slightly experimental feature. You will currently get URLs that are inappropriate.
+			p = Parser(r.text,url=self['url'])
+			urls = p.parse()
+			for url in urls:
+				entry 		= e
+				entry.link	= url
+				time.sleep(2) # You might want to remove this but then you won't be fetching anything at all.
+				self.threads.append(gevent.spawn(self.fetch,entry))
+		if len(self.threads) > len(urls):
 			self.log("%s: Some coroutines from the previous fetch haven't finished. Consider scheduling fetches further apart." % self['name'], 'warning')
 		gevent.sleep()
 
-	def fetch(self,e):
+	def fetch(self,entry):
 		try:    # Guessing the same feed won't have multiple entries under the same name.
-			a = Article(self.db, self.log, self.config, title=e.title)
+			if entry.title: a = Article(self.db, self.log, self.config, title=entry.title)
+			else: a = Article(self.db, self.log, self.config, url=entry.link)
 			if not a.article:
-				try: r = requests.get(e.link, headers=self.h)
+				try: r = requests.get(entry.link, headers=self.h)
 				except Exception, err: 
-					#self.log("Couldn't retrieve %s (SSL Error)" % e.link,'error')
+					self.log("Couldn't retrieve %s (%s)" % (entry.link, err.message),'error')
 					#print err.__class__
 					#print err.message
 					return
-				a.create(self, r, e)
+				a.create(self, r, entry)
 				if self.fm:
 					self.fm.put('+ %s %s %s' % (a['uid'], a['url'], a['title']))
 			else:
 				self.log('%s: Already storing %s "%s"' % (self['name'],a['uid'],a['title']), 'debug')
 				return
-		except Exception, e:
-			self.log(e,'error')
+		except Exception, err:
+			self.log(err,'error')
 
 	def articles(self,limit=10, offset=0, order_by="desc", table="articles"):
 		if self.feed:

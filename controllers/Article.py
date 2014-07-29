@@ -53,7 +53,7 @@ class Article(object):
 
 	# Pass {'uid':''} as parent in order to fetch singular resources.
 	def create(self, parent, r, e):
-		if not parent['uid']: parent['name'] = '__remote__'
+#		if not parent['uid']: parent['none'] = '__none__' 
 		call_time = time.time()
 		try:
 			pre_exist = self.ref_t.find(url=e.link).next()
@@ -89,7 +89,6 @@ class Article(object):
 		img=''
 		if a.top_image != None: img = a.top_image.src	
 		article 	= dict(
-		title 		= entry.title,
 		time 		= time.time(),
 		url 		= r.url,
 		domain		= urlparsed.netloc,
@@ -99,6 +98,9 @@ class Article(object):
 		content_uid = cuid,
 		summary 	= summary
 		)
+		if entry.title: article['title'] = entry.title
+		else: article['title'] = a.title
+
 		self.ref_t.insert(article)
 	
 		article_content = dict(
@@ -109,15 +111,16 @@ class Article(object):
 		self.content_t.insert(article_content)
 		self.article = article
 		if call_time:
-			self.log('%s: Stored %s "%s" (%s)' % (parent['name'], puid, entry.title, tconv(time.time() - call_time)))
+			if entry.title: self.log('%s: Stored %s "%s" (%s)' % (parent['name'], puid, entry.title, tconv(time.time() - call_time)))
+			else: 			self.log('%s: Stored %s "%s" (%s)' % (parent['name'], puid, a.title,	 tconv(time.time() - call_time)))
 		else:
-			self.log('%s: Stored %s "%s" %s' % (parent['name'], puid, entry.title))
+			if entry.title: self.log('%s: Stored %s "%s" %s' % (parent['name'], puid, entry.title))
+			else: 			self.log('%s: Stored %s "%s" %s' % (parent['name'], puid, a.title))
 
 	def create_reference(self, parent, r, entry, call_time=None):
 		puid = uid()
 		urlparsed 	= urlparse.urlparse(r.url)
 		article 	= dict(
-		title 		= entry.title,
 		time 		= time.time(),
 		url 		= entry.link,
 		domain		= urlparsed.netloc,
@@ -126,6 +129,10 @@ class Article(object):
 		uid			= puid,
 		content_uid	= ''
 		)
+		if entry.title: article['title'] = entry.title
+		else:
+			if 'content-type' in r.headers.keys(): article['title'] = "%s %s" % (r.url,r.headers['content-type'])
+			else: article['title'] = r.url
 		self.ref_t.insert(article)
 		self.article = article
 		if 'content-type' in r.headers.keys():

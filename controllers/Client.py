@@ -9,7 +9,7 @@ class ClientError(Exception):
 		return repr(self.message)
 
 class Interface(object):
-	# cli if x,y within certain range, tui if possible
+	# cli or tui..
 	def __init__(self,client,db=None,config=None):
 		self.client = client
 		self.db = db
@@ -22,11 +22,11 @@ class Interface(object):
 
 	def cli(self):
 		running = True
+		if self.db: count = self.client
 		while running:
-			if self.db:
-				if self.config: input = raw_input("{:,}> ".format(self.count(self.config['article_table'])))
-				else: input = raw_input("{:,}> ".format(self.count()))
-			else: input = raw_input('emissary> ')
+			if self.config: input = raw_input("({:,}) > ".format(self.count(self.config['article_table'])))
+			else: input = raw_input("({:,}) > ".format(self.count()))
+			while self.client.stream: print self.client.stream.pop()
 			if not input: continue
 			if input == 'exit':
 				if self.client.connected: self.client('exit')
@@ -35,18 +35,22 @@ class Interface(object):
 			if type(r) == dict:
 				if 'document' in r.keys(): pipepager(r['document']['content'].encode('utf-8','ignore'),'less')
 				else: self.p(r)
-			else: print r
-			while self.client.stream: print self.client.stream.pop()
+			elif r: print r,
 		raise SystemExit
 
 	def count(self, table="articles"):
-		q = 'SELECT count(*) FROM %s' % (table)
-		r = self.db.query(q)
-		try:
-			i = r.next()
-			return i['count(*)']
-		except StopIteration:
-			return 0
+		if self.db:
+			q = 'SELECT count(*) FROM %s' % (table)
+			try: r = self.db.query(q)
+			except: return 0
+			try:
+				i = r.next()
+				return i['count(*)']
+			except StopIteration:
+				return 0
+		else:
+			r = self.client('count')
+			return r['count']
 
 
 def get_credentials():
@@ -63,6 +67,7 @@ def add_user(db,config=None,table="users"):
 	"""Use getpass to add a user to the database."""
 	if config: t = db[config['user_table']]
 	else: t = db[table]
+	admin_present = t.find_one(admin=1)	# We're going to determine if there is at least one administrator.
 	username = raw_input('Username: ')
 	password = getpass.getpass(prompt="Password: ")
 	confirm_password = getpass.getpass(prompt="Confirm password: ")
@@ -70,6 +75,10 @@ def add_user(db,config=None,table="users"):
 		u = User.User(db)
 		result = u.create_user(username, password)
 		if result == True:
+			if not admin_present:
+				print "An administrative account wasn't detected."
+				make_admin = raw_input('Make this user an admin? [Y/n]')
+				if ('n' not in make_admin): u['admin'] = 1
 			print "Added new user %s." % username
 		else:
 			print "User %s already exists." % username

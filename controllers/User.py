@@ -70,20 +70,21 @@ class User(object):
 	def create_user(self, username, password,user=None):
 		if user and type(user) == dict:
 			username = user['username']
-		password = user['password']
+			password = user['password']
 		# Check that this username isn't already taken.
 		preexisting = self.users_table.find_one(username=username)
 		if preexisting:
 			return UserError('User %s already exists' % username)
 		passhash = hashlib.sha256(password).hexdigest()
-		self.user = {'username':username,
-					 'passhash':passhash,
-					 'created_at':time.time(),
-					 'admin':0,
-					 'active':1,
-					 'result_limit':25,
-					 'authenticated':0}
-		self.users_table.insert(self.user)
+		user  = {'username':username,
+				 'passhash':passhash,
+				 'created_at':time.time(),
+				 'admin':0,
+				 'active':1,
+				 'result_limit':25,
+				 'authenticated':0}
+		self.users_table.insert(user)
+		self.user = self.users_table.find_one(username=username)
 		return True
 
 	def clear_sessions(self):
@@ -127,9 +128,10 @@ class User(object):
 			raise UserError('No attr %s' % key)
 
 	def __setitem__(self, key, value):
-		# Perform transparent upserts
-		# Transparently hash new passwords
-		pass
+		if self.user:
+			self.user[key] = value
+			self.users_table.upsert(self.user,['id'])
+		else: raise UserError('User not loaded.')
 
 	def is_authenticated(self):
 		return True

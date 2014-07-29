@@ -1,9 +1,21 @@
-import SocketServer, select, time, socket, json, string, random
+import SocketServer, select, time, socket, json, string, random, requests
 from User import User
 from Feed import Feed
 from Article import Article
-from Utils import uid
+from Utils import e, uid
 from Cron import parse_crontab_line
+
+def restricted(func):
+	"""
+	Restrict commands to administrators.
+	"""
+	def wrapper(self, *args):
+		if self.user:
+			if self.user['admin']:
+				return func(self, *args)
+			else:
+				return self.handle_echo('! Administrators only.')
+	return wrapper
 
 class Protocol(SocketServer.BaseRequestHandler):
 	def __init__(self,request,client_address,server):
@@ -32,8 +44,8 @@ class Protocol(SocketServer.BaseRequestHandler):
 					msg = self.send_queue.pop(0)
 					msg = msg.encode('utf-8','ignore') + '\n' # ?
 					self.request.send(msg + self.server.end_marker)
-				except Exception, e:
-					self.request.send(str(e) + '\n')
+				except Exception, err:
+					self.request.send(str(err) + '\n')
 					self.server.log("%s: %s" % (self.host[0],str(e)), 'error')
 
 			# Give clients ten seconds to authenticate.
@@ -102,6 +114,9 @@ class Protocol(SocketServer.BaseRequestHandler):
 		"""
 		"AUTH username password"
 		"""
+		if not ' ' in params:
+			self.request.close()
+			return
 		username, password = params.split()
 		u = User(self.server.db, username=username).check_auth(password)
 		if u:
@@ -148,11 +163,12 @@ class Protocol(SocketServer.BaseRequestHandler):
 				err = {'error':'Unrecognized feed.'}
 				self.send_queue.append(json.dumps(err))
 
+	@restricted
 	def handle_adjust(self, params):
 		"""
 		"ADJUST feed | user | db_limit | useragent"
 		"""
-		# TODO: Implement this.
+		# TODO: Implement this via Utils.parse_crontab_option
 		if ' ' in params:
 			(command, args) = paras.split(' ',1)
 			if command == 'feed':
@@ -172,6 +188,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 			msg = {'error':'Need more parameters.'}
 			self.send_queue.append(json.dumps(msg))
 
+	@restricted
 	def handle_add(self, params):
 		"""
 		"ADD url | user"
@@ -183,8 +200,8 @@ class Protocol(SocketServer.BaseRequestHandler):
 			if command == 'url':
 				try:
 					(url,name,timings) = parse_crontab_line(''.join(args),tcpd=True)
-				except Exception, e:
-					self.send_queue.append(json.dumps({'error':e.message}))
+				except Exception, err:
+					self.send_queue.append(json.dumps({'error':err.message}))
 					return
 				try:
 					feed = Feed(self.server.db,self.server.log,self.server.config).create(name,url,timings)
@@ -203,6 +220,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 			doc = get_doc(self.handle_add, True)
 			self.send_queue.append(doc)
 
+	@restricted
 	def handle_delete(self, params):
 		"""
 		"DELETE feed | article | user"
@@ -221,8 +239,8 @@ class Protocol(SocketServer.BaseRequestHandler):
 					a = Article(self.server.db,self.server.log,self.server.config,uid=args)
 					a.delete()
 					response={'success':'Deleted article %s' % args}
-				except Exception, e:
-					response={'error':'There was an error deleting %s: %s' % (args,e.message)}
+				except Exception, err:
+					response={'error':'There was an error deleting %s: %s' % (args,err.message)}
 				self.send_queue.append(json.dumps(response))
 			elif command == 'user':
 				pass
@@ -232,19 +250,58 @@ class Protocol(SocketServer.BaseRequestHandler):
 			doc = get_doc(self.handle_delete,True)
 			self.send_queue.append(doc)
 
+	@restricted
 	def handle_rescan(self, params=None):
 		"""
 		Forces Emissary to pick up on new feeds and detect whether current ones are up to date.
 		"""
 		self.server.fm.put('rescan %s %s' % (hex(id(self)), self.user['username']))
 
+	@restricted
 	def handle_fetch(self, params):
 		"""
 		"FETCH article_url | article_uid" stores a new article or refreshes an existing one.
 		"""
+		if self.server.config['no_fetching']:
+			err = {'error':"Database full."}
+			self.send_queue.append(json.dumps(err))
+			return
+		if self.server.config['issue_warnings']:
+			err = {'error':'Database 90 percent full.'}
+			self.send_queue.append(json.dumps(err))
+			return		
+		if 'useragent' in self.server.config.config.keys():
+			self.h={'User-Agent':self.config['useragent']}
+		elif 'version' in self.server.config.config.keys():
+			self.h={'User-Agent':'Emissary ' + self.server.config['version']}
+		else:
+			self.h={'User-Agent':'Emissary'}
 		if params.startswith('http://'):
-		# do this here
-			pass
+			try: r = requests.get(params,headers=self.h)
+			except:
+				self.send_queue.append(json.dumps({'error':"Couldn't fetch resource."}))
+				return
+			f={'uid':'__none__','name':'User:%s' % self.user['username']}
+		else:
+			f = Feed(self.server.db,self.server.log,self.server.config,uid=params)
+			if not f.feed:
+				self.send_queue.append(json.dumps({'error':"Couldn't fetch resource."}))
+				return
+		a=Article(self.server.db,self.server.log,self.server.config)
+		e.link=r.url
+		a.create(f,r,e)
+		was_streaming = False
+		if self.stream:
+			was_streaming = True
+			self.stream = False
+		if a.article:
+			self.send_queue.append(json.dumps(a.article))
+		else:
+			err = {'error':"Couldn't store resource."}
+			self.send_queue.append(json.dumps(err))
+		if was_streaming:
+			self.stream = True
+				
 
 	def handle_read(self, params):
 		"""
@@ -324,6 +381,21 @@ class Protocol(SocketServer.BaseRequestHandler):
 			else:
 				self.send_queue.append('! Unrecognised command "%s"' % params.upper())
 
+	def handle_count(self, params):
+		"""
+		"COUNT [feed_id]"
+		"""
+		q = 'SELECT count(*) FROM %s ' % self.server.config['article_table']
+		if params: q += 'WHERE parent_uid = "%s"' % params
+		r = self.server.db.query(q)
+		try:
+			i = r.next()
+			i=i['count(*)']
+		except StopIteration:
+			i=0
+		r={'count':i}
+		self.send_queue.append(json.dumps(r))
+
 	def handle_exit(self, params):
 		"""
 		Closes this connnection.
@@ -359,3 +431,4 @@ def get_doc(func, return_json=False):
 					break
 	if not return_json: return doc
 	else: return json.dumps({'doc':doc})
+

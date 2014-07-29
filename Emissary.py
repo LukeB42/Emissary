@@ -43,10 +43,7 @@ class FeedManager(gevent.Greenlet):
 					response = {'success':'RESCAN successfully completed. %s' % id}
 					self.server.put(response)
 				except Exception, e:
-					#if e.message: 
-					response = {'error':'RESCAN failed: %s. %s' % (e.message,id)} # TODO: Test this
-					print e.message
-					#else: 		  response = {'error':'RESCAN failed. %s' % session}
+					response = {'error':'RESCAN failed: %s. %s' % (e.message,id)}
 					self.server.put(response)
 
 	def __setitem__(self, name, crontab):
@@ -65,7 +62,7 @@ class FeedManager(gevent.Greenlet):
 			raise KeyError('Invalid CronTab')
 
 	def __delitem__(self, name):
-		"""Halt crontab, delete""" # TODO: Test this.
+		"""Halt crontab, delete"""
 		if name in self.crontabs.keys():
 			self.crontabs[name].kill()
 			del self.crontabs[name]
@@ -125,10 +122,10 @@ class FeedManager(gevent.Greenlet):
 				if i.started == False:
 					self.threads.remove(i)
 
-# The reason we define this here instead of Cron.py is because of circular imports
+# Defined here instead of Cron.py to prevent circular imports
 # Where Cron.parse_crontab would import Feed would import Cron.parse_timings
-# We do use Cron.parse_crontab_line both here and Server.py
-# This keeps Cron.py somewhat application agnostic.
+# Cron.parse_crontab_line used here and Server.py
+# This keeps Cron.py application agnostic.
 def parse_crontab(db,log):
 	table = db['feeds']
 	crontab = sys.stdin.read()
@@ -229,7 +226,7 @@ def daemon(pidfile):
 	try:
 		pid = os.fork()
 		if pid > 0:
-			sys.exit(0) # End parent
+			sys.exit(0) # parent
 	except OSError, e:
 		sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
 		sys.exit(-2)
@@ -245,7 +242,7 @@ def daemon(pidfile):
 			except IOError, e:
 				logging.error(e)
 				sys.stderr.write(repr(e))
-			sys.exit(0) # End parent
+			sys.exit(0) # parent
 	except OSError, e:
 		sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
 		sys.exit(-2)
@@ -283,9 +280,6 @@ if __name__ == '__main__':
 	if options.stop or options.restart:
 		halt(options.pidfile)
 
-    
-
-
 # init db
 	db = dataset.connect(options.driver + ':///' + options.db)
 
@@ -312,7 +306,7 @@ if __name__ == '__main__':
 	config['long_threads']	= False
 	config.safe = True
 
-# drop privileges    
+# drop privs
 	if options.run_as:
 		try:
 			uid = pwd.getpwnam(options.run_as)[2]
@@ -334,9 +328,13 @@ if __name__ == '__main__':
 	if options.interactive:
 		host = (options.address,int(options.port))
 		c = Client.get_credentials()
-		ec = Client.EmissaryClient(host, c)
+		try: ec = Client.EmissaryClient(host, c)
+		except Client.ClientError, e:
+			print e.message
+			raise SystemExit
 		if ec.connected:
-			ui = Client.Interface(ec,db,config)
+			if options.address == '127.0.0.1': ui = Client.Interface(ec,db,config)
+			else: ui = Client.Interface(ec)
 			ui.render()
 		else:
 			print "Invalid username or password."
