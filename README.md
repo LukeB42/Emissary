@@ -4,12 +4,12 @@ Emissary
 Cron for indexing HTTP resources.
 
 --------
+<pre>
 Emissary runs in the background periodically extracting
 the raw text of online articles, from news sites or blogs.
 
 A client library is included to facilitate integrating into other programs.
---------
-<pre>
+
 ./Emissary --start        (default)
 ./Emissary --stop         Stop Emissary immediately.
 ./Emissary --restart
@@ -33,22 +33,28 @@ db_limit 5g
 http://feed.tld/rss     'feed'   0       6,12    *   0-11    mon-fri
 
 user@host $ cat feeds.txt | ./Emissary
-
 user@host $ ./Emissary --add-user
 user@host $ ./Emissary
 user@host $ ./Emissary --interactive
 
-(25,289) >
+(3,189) > help
 </pre>
 
-INSTALLATION:
+#### INSTALLATION:
 --------
 gevent==1.0
+
 dataset==0.3.14
+
 requests==2.1.0
+
 feedparser==5.1.3
+
 goose-extractor==1.0.6
 
+
 Debian-based systems may require the following:
+
 sudo aptitude install zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent
+
 sudo pip install lxml BeautifulSoup cssselect feedparser gevent requests sqlalchemy dataset
