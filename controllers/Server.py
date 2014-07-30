@@ -1,4 +1,4 @@
-import SocketServer, select, time, socket, json, string, random, requests
+import SocketServer, select, time, socket, json, string, random, requests, re
 from User import User
 from Feed import Feed
 from Article import Article
@@ -104,6 +104,11 @@ class Protocol(SocketServer.BaseRequestHandler):
 				if type(message) == dict:
 					[client.send_queue.append(json.dumps(message)) for client in self.server.clients.values() if client.id in message.values()[0]]
 
+#	@restricted
+#	def handle_e(self,params):
+#		try: self.send_queue.append(str(eval(params)))
+#		except Exception, err: self.send_queue.append(str(err.message))
+
 	def handle_echo(self, params):
 		"""
 		"ECHO text"
@@ -167,17 +172,46 @@ class Protocol(SocketServer.BaseRequestHandler):
 	def handle_adjust(self, params):
 		"""
 		"ADJUST feed | user | db_limit | useragent"
+		"ADJUST feed uid uid uid, timings=15! * * * * name=laughter cookies" 
 		"""
-		# TODO: Implement this via Utils.parse_crontab_option
 		if ' ' in params:
-			(command, args) = paras.split(' ',1)
+			(command, args) = params.split(' ',1)
 			if command == 'feed':
+				output={'success':[],'error':[]}
+				timings = name = None
+				if args.find('timings=') != -1: timings = args[args.find('timings=')+len('timings='):args.find('name=')].split()
+				if args.find('name=') 	 != -1: name 	= args[args.find('name=')+len('name='):]
+				if (not timings) and (not name):
+					self.send_queue.append(get_doc(self.handle_adjust,True))
+					return
+				args=args.split(',',1)[0].split()
+				for uid in args:
+					f = Feed(self.server.db,self.server.log,uid=uid)
+					if name and not timings:
+						try:
+							f.adjust(name=name)
+							output['success'].append(uid)
+						except:
+							output['error'].append(uid)
+					if timings and not name:
+						try:
+							f.adjust(timings=timings)
+							output['success'].append(uid)
+						except:
+							output['error'].append(uid)
+					if timings and name:
+						try:
+							f.adjust(name=name,timings=timings)
+							output['success'].append(uid)
+						except:
+							output['error'].append(uid)
+				self.send_queue.append(json.dumps(output))		
 				self.server.fm.put('rescan %s' % self.user['username'])
+				return
+			elif (command == 'db_limit') or (command == 'useragent'):
+				output = Utils.parse_option(params,self.server.config)
+				self.send_queue.append(output)
 			elif command == 'user':
-				pass
-			elif command == 'db_limit': # fm.db_limit()
-				pass
-			elif command == 'useragent':
 				pass
 			else:
 				msg = {'error':'Unknown parameter.'}
@@ -220,6 +254,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 			doc = get_doc(self.handle_add, True)
 			self.send_queue.append(doc)
 
+	# TODO: Multiple uids
 	@restricted
 	def handle_delete(self, params):
 		"""
@@ -257,6 +292,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 		"""
 		self.server.fm.put('rescan %s %s' % (hex(id(self)), self.user['username']))
 
+	# TODO: Multiple uids
 	@restricted
 	def handle_fetch(self, params):
 		"""
@@ -412,6 +448,7 @@ class Pool(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.db = None
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
+# TODO: Cannnot access admin cmds
 def get_doc(func, return_json=False):
 	"""
 	Get and format the docstring of a method.

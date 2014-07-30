@@ -297,7 +297,6 @@ if __name__ == '__main__':
 	# if options.config: load configuration from json file.
 	if (not 'version' in config.config.keys()) or (VERSION != config['version']):
 		config.safe = False
-	config.safe = False
 	config['version'] 		= VERSION
 	config['feed_table'] 	= 'feeds'
 	config['article_table']	= 'articles'

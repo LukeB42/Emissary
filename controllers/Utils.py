@@ -2,6 +2,59 @@ import time, datetime, base64, re, lxml.html, urlparse
 
 class e: title = None
 
+def parse_option(line,config):
+	if ' ' in line:
+		output=''
+		(directive, option) = line.split(' ',1)
+		if directive == 'db_limit':
+			amount 	  = option[:-1] 
+			scale 	  = option[-1:]
+			if scale == 'k': db_limit = int(amount) * 1024
+			if scale == 'm': db_limit = int(amount) * 1048576
+			if scale == 'g': db_limit = int(amount) * 1073741824
+			output += "Setting db_limit to %i bytes\n" % db_limit
+			config.safe = False
+			try: config['db_limit'] = db_limit
+			except Exception, err: output = err.message
+			config['issue_warnings'] = 0
+			config['no_fetching']    = 0
+			config.safe = True
+		elif directive == "useragent":
+			output = "User-Agent: %s" % option
+			config.safe = False
+			try: config['useragent'] = option
+			except Exception, err: output = err.message
+			config.safe = True
+		elif options == "store_binaries":
+			if option == 'on':
+				output = "Storing binaries."
+				config.safe = False
+				try: config['store_binaries'] = 1
+				except Exception, err: output = err.message
+				config.safe = True
+			if option == 'off':
+				output = "Referencing binaries."
+				config.safe = False
+				try: config['store_binaries'] = 0
+				except Exception, err: output = err.message
+				config.safe = True
+		elif options == "long_threads":
+			if option == 'on':
+				output = "Long threads enabled."
+				config.safe = False
+				try: config['long_threads'] = 1
+				except Exception, err: output = err.message
+				config.safe = True
+			if option == 'off':
+				output = "Long threads disabled."
+				config.safe = False
+				try: config['long_threads'] = 0
+				except Exception, err: output = err.message
+				config.safe = True
+
+		else: output = "Unrecognised directive."
+	return output
+
 def uid():
         millis = int(round(time.time() * 1000))
         dt = datetime.datetime.now()
@@ -53,6 +106,7 @@ class ParserError(Exception):
 	def __str__(self):
 		return repr(self.message)
 
+# TODO: Condense to single function
 class Parser(object):
 	"""
 	Mostly for building a list of relevant links from a string of html.
