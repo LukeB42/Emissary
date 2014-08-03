@@ -252,7 +252,7 @@ def daemon(pidfile):
 		except OSError:
 			pass
 
-VERSION = '0.0.1'
+VERSION = '0.1'
 if __name__ == '__main__':
 # parse args
 	prog = "Emissary"

@@ -114,7 +114,8 @@ class Parser(object):
 	def __init__(self,html=None,doc=None,url=None):
 		self.html=html
 		self.doc=doc
-		self.url = url
+		if url: self.url = urlparse.urlparse(url).netloc
+		else: 	self.url = url
 		self.links=[]
 
 	def root_to_urls(self, doc, titles):
@@ -145,7 +146,6 @@ class Parser(object):
 		return self.root_to_urls(doc, titles)
 
 	def fromstring(self, html):
-#		html = encodeValue(html)
 		try:
 			self.doc = lxml.html.fromstring(html)
 		except Exception, e:
@@ -160,6 +160,8 @@ class Parser(object):
 		urls = self.get_urls(html)
 		if not urls: return urls
 		else: urls = set(urls)
+		if url: url = "http://%s/" % urlparse.urlparse(url).netloc
+		if self.url: self.url = "http://%s/" % urlparse.urlparse(url).netloc
 		for u in urls:
 			if url:
 				if u == url: continue

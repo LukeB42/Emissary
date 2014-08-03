@@ -15,6 +15,7 @@ def restricted(func):
 				return func(self, *args)
 			else:
 				return self.handle_echo('! Administrators only.')
+	wrapper.__doc__ = func.__doc__
 	return wrapper
 
 class Protocol(SocketServer.BaseRequestHandler):
@@ -104,10 +105,10 @@ class Protocol(SocketServer.BaseRequestHandler):
 				if type(message) == dict:
 					[client.send_queue.append(json.dumps(message)) for client in self.server.clients.values() if client.id in message.values()[0]]
 
-#	@restricted
-#	def handle_e(self,params):
-#		try: self.send_queue.append(str(eval(params)))
-#		except Exception, err: self.send_queue.append(str(err.message))
+	@restricted
+	def handle_eval(self,params):
+		try: self.send_queue.append(str(eval(params)))
+		except Exception, err: self.send_queue.append(str(err.message))
 
 	def handle_echo(self, params):
 		"""
@@ -179,32 +180,23 @@ class Protocol(SocketServer.BaseRequestHandler):
 			if command == 'feed':
 				output={'success':[],'error':[]}
 				timings = name = None
-				if args.find('timings=') != -1: timings = args[args.find('timings=')+len('timings='):args.find('name=')].split()
-				if args.find('name=') 	 != -1: name 	= args[args.find('name=')+len('name='):]
+				if args.find('timings=') != -1:
+					if args.find('name=') == -1: timings = args[args.find('timings=')+len('timings='):]
+					else: 						 timings = args[args.find('timings=')+len('timings='):args.find('name=')]
+				if args.find('name=') 	 != -1:  name = args[args.find('name=')+len('name='):]
 				if (not timings) and (not name):
 					self.send_queue.append(get_doc(self.handle_adjust,True))
 					return
 				args=args.split(',',1)[0].split()
 				for uid in args:
 					f = Feed(self.server.db,self.server.log,uid=uid)
-					if name and not timings:
-						try:
-							f.adjust(name=name)
-							output['success'].append(uid)
-						except:
-							output['error'].append(uid)
-					if timings and not name:
-						try:
-							f.adjust(timings=timings)
-							output['success'].append(uid)
-						except:
-							output['error'].append(uid)
-					if timings and name:
-						try:
-							f.adjust(name=name,timings=timings)
-							output['success'].append(uid)
-						except:
-							output['error'].append(uid)
+					print timings
+					try:
+						f.adjust(name=name,timings=timings)
+						output['success'].append(uid)
+					except Exception, err:
+						print "\n%s\n" % err.message
+						output['error'].append(uid)
 				self.send_queue.append(json.dumps(output))		
 				self.server.fm.put('rescan %s' % self.user['username'])
 				return
@@ -454,6 +446,7 @@ def get_doc(func, return_json=False):
 	Get and format the docstring of a method.
 	"""
 	doc = ''
+	if not func.__doc__: return "Cannot obtain documentation for %s" % repr(func)
 	docs = func.__doc__.split('\n')
 	for k, line in enumerate(docs):
 		for i,character in enumerate(line):

@@ -67,7 +67,7 @@ class Article(object):
 		g = goose.Goose()
 
 		try:
-			self.log("Extracting content from %s" % r.url)
+			self.log("%s: Extracting content from %s" % (parent['name'],r.url))
 			# Write a whole-page extractor. (Images, formatting.)
 			a = g.extract(raw_html=r.text)
 		except:

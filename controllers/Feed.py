@@ -133,7 +133,10 @@ class Feed(object):
 			self.h={'User-Agent':'Emissary ' + self.config['version']}
 		else:
 			self.h={'User-Agent':'Emissary'}
-		r = requests.get(self.feed['url'],headers=self.h)
+		try: r = requests.get(self.feed['url'],headers=self.h)
+		except requests.exceptions.ConnectionError, err:
+			self.log("%s: Fetching %s failed: %s" % (self['name'], self['url'], err), 'error')
+			return
 		urls=[]
 		if ('content-type' in r.headers.keys()) and ('xml' in r.headers['content-type']):
 			f = feedparser.parse(r.text)
@@ -158,10 +161,8 @@ class Feed(object):
 			else: a = Article(self.db, self.log, self.config, url=entry.link)
 			if not a.article:
 				try: r = requests.get(entry.link, headers=self.h)
-				except Exception, err: 
-					self.log("Couldn't retrieve %s (%s)" % (entry.link, err.message),'error')
-					#print err.__class__
-					#print err.message
+				except requests.exceptions.SSLError, err: 
+					self.log("%s: SSLError: %s (%s)" % (self['name'], entry.link, err),'error')
 					return
 				a.create(self, r, entry)
 				if self.fm:
@@ -170,7 +171,7 @@ class Feed(object):
 				self.log('%s: Already storing %s "%s"' % (self['name'],a['uid'],a['title']), 'debug')
 				return
 		except Exception, err:
-			self.log(err,'error')
+			self.log("%s: %s" % (self['name'],err),'error')
 
 	def articles(self,limit=10, offset=0, order_by="desc", table="articles"):
 		if self.feed:
@@ -202,9 +203,9 @@ class Feed(object):
 		l=[]
 		t = self.db[table].table
 		if all:
-			stmt = t.select(t.c.title.like('%% %s %%' % query))
+			stmt = t.select(t.c.title.like('%%%s%%' % query))
 		else:
-			stmt = t.select(t.c.title.like('%% %s %%' % query)).where(t.c.parent_uid == self.feed['uid'])
+			stmt = t.select(t.c.title.like('%%%s%%' % query)).where(t.c.parent_uid == self.feed['uid'])
 		result = self.db.query(stmt)
 		for i in result:
 			l.append(i)
