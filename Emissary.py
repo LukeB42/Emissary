@@ -5,7 +5,7 @@ import sys, os, time, pwd, optparse, gevent, dataset
 from gevent.queue import Queue
 from multiprocessing import Process, Queue as MPQueue
 sys.path.append(os.path.curdir)
-from controllers import Log, Cron, Feed, Config, Client, Server
+from controllers import Log, Cron, Feed, Config, Utils, Client, Server
 
 class EmissaryError(Exception):
 	def __init__(self, message):
@@ -27,13 +27,12 @@ class FeedManager(gevent.Greenlet):
 			log("%s %s" % (i,v))
 
 	def receive(self, message):
-		if message == "ping":
-			pass
-		else:
+		if type(message) == str:
+			if message == "ping": return
 			(cmd,args) = message.split(' ',1)
 			cmd=cmd.lower()
-			if len(cmd) == 1:
-				self.server.put(message)
+#			if len(cmd) == 1:
+#				self.server.put(message)
 			if cmd == 'rescan':
 				if len(args.split()) > 1: (id,username) = args.split()
 				else: return
@@ -45,6 +44,7 @@ class FeedManager(gevent.Greenlet):
 				except Exception, e:
 					response = {'error':'RESCAN failed: %s. %s' % (e.message,id)}
 					self.server.put(response)
+		else: self.server.put(message)
 
 	def __setitem__(self, name, crontab):
 		if name in self.crontabs.keys():
@@ -130,32 +130,12 @@ def parse_crontab(db,log):
 	table = db['feeds']
 	crontab = sys.stdin.read()
 	feedlines={}
-	db_limit=None
-	useragent=None
 	for index, line in enumerate(crontab.split('\n')):
 		if line.startswith('http'):
 			index+=1
 			feedlines['%s' % index] = line
-		if line.startswith('db_limit'):
-			db_limit = line.split()[1]
-		if line.startswith('useragent'):
-			useragent = ' '.join(line.split()[1:])
-	if useragent:
-		config.safe = False
-		config['useragent'] = useragent
-		config.safe = True
-	if db_limit:
-		amount = db_limit[:-1]
-		scale = db_limit[-1:]
-		if scale == 'k': db_limit = int(amount) * 1024
-		if scale == 'm': db_limit = int(amount) * 1048576
-		if scale == 'g': db_limit = int(amount) * 1073741824
-		sys.stdout.write("Setting db_limit to %i bytes\n" % db_limit)
-		config.safe = False
-		config['db_limit'] = db_limit
-		config['issue_warnings'] = 0
-		config['no_fetching']    = 0
-		config.safe = True
+		elif (line.startswith('#')) or (line == ''): continue
+		else: print Utils.parse_option(line,config)
 	for lineno, feedline in feedlines.items():
 		url=name=timings=None
 		try:
@@ -256,8 +236,8 @@ VERSION = '0.1'
 if __name__ == '__main__':
 # parse args
 	prog = "Emissary"
-	description = "A cronlike program for rss feeds."
-	epilog = "Psybernetics %s." % Cron.time.asctime().split()[-1]
+	description = "A cronlike program for indexing HTTP resources."
+	epilog = "psybernetics.org.uk %s." % Cron.time.asctime().split()[-1]
 	parser = optparse.OptionParser(prog=prog,version=VERSION,description=description,epilog=epilog)
 	parser.set_usage(__file__ + ' -f')
 	parser.add_option("--start", dest="start", action="store_true", default=True, help="(default)")

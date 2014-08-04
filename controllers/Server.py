@@ -14,7 +14,7 @@ def restricted(func):
 			if self.user['admin']:
 				return func(self, *args)
 			else:
-				return self.handle_echo('! Administrators only.')
+				return self.handle_echo(json.dumps({"error": "Administrators only."}))
 	wrapper.__doc__ = func.__doc__
 	return wrapper
 
@@ -74,7 +74,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 							command = line
 							params = ''
 						if (self.user == None) and (command.lower() != "auth" and command.lower() != "exit"):
-							self.request.send('! Authenticate first.\n')
+							self.request.send("{'error':'Authenticate first.'}\n")
 						else:
 							handler = getattr(self, 'handle_%s' % (command.lower()), None)
 							if handler:
@@ -98,12 +98,11 @@ class Protocol(SocketServer.BaseRequestHandler):
 	def receive(self,message):
 		if message:
 			if len(self.server.clients) > 0:
-				if (type(message) == str) or (type(message) == unicode):
-					if (message.split()[0] == '+') or (message.split()[0] == '!'):
-						message = json.dumps({'stream':message})
-						[client.send_queue.append(message) for client in self.server.clients.values() if client.stream]
 				if type(message) == dict:
-					[client.send_queue.append(json.dumps(message)) for client in self.server.clients.values() if client.id in message.values()[0]]
+					if ('stream' in message.keys()) or ('error' in message.keys()):
+						[client.send_queue.append(json.dumps(message)) for client in self.server.clients.values() if client.stream]
+					else:
+						[client.send_queue.append(json.dumps(message)) for client in self.server.clients.values() if client.id in message.values()[0]]
 
 	@restricted
 	def handle_eval(self,params):
@@ -151,7 +150,13 @@ class Protocol(SocketServer.BaseRequestHandler):
 			a['feeds'] = l
 			self.send_queue.append(json.dumps(a))
 		elif params.lower() == 'users':
-			self.send_queue.append('| Not implemented yet.')
+			if self.user['admin']:
+				t = self.server.db[self.server.config['user_table']]
+				for i in t.find():
+					l.append(i)
+				a['users'] = l
+				self.send_queue.append(json.dumps(a))
+			else: self.handle_echo(json.dumps({'error':'Administrators only.'}))
 		else:
 			f = Feed(self.server.db,None,uid=params)
 			if f.feed:
@@ -217,13 +222,13 @@ class Protocol(SocketServer.BaseRequestHandler):
 	@restricted
 	def handle_add(self, params):
 		"""
-		"ADD url | user"
-		"ADD url http://site.tld/urn 'name' 15! * * * *" would add http://site.tld/urn to be fetched every 15 minutes.
+		"ADD feed | user"
+		"ADD feed http://site.tld/urn 'name' 15! * * * *" would add http://site.tld/urn to be fetched every 15 minutes.
 		"ADD user username password" would similarly add "username" with a password of "password".
 		"""
 		if ' ' in params:
 			(command, args) = params.split(' ',1)
-			if command == 'url':
+			if command == 'feed':
 				try:
 					(url,name,timings) = parse_crontab_line(''.join(args),tcpd=True)
 				except Exception, err:
@@ -309,7 +314,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 			except:
 				self.send_queue.append(json.dumps({'error':"Couldn't fetch resource."}))
 				return
-			f={'uid':'__none__','name':'User:%s' % self.user['username']}
+			f={'uid':'__none__','name':'User "%s"' % self.user['username']}
 		else:
 			f = Feed(self.server.db,self.server.log,self.server.config,uid=params)
 			if not f.feed:
@@ -407,7 +412,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 				doc = get_doc(func)
 				self.send_queue.append(doc)
 			else:
-				self.send_queue.append('! Unrecognised command "%s"' % params.upper())
+				self.send_queue.append(json.dumps({'error':'Unrecognised command "%s"' % params.upper()}))
 
 	def handle_count(self, params):
 		"""

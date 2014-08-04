@@ -3,8 +3,8 @@ import time, datetime, base64, re, lxml.html, urlparse
 class e: title = None
 
 def parse_option(line,config):
+	output=''
 	if ' ' in line:
-		output=''
 		(directive, option) = line.split(' ',1)
 		if directive == 'db_limit':
 			amount 	  = option[:-1] 
@@ -12,10 +12,10 @@ def parse_option(line,config):
 			if scale == 'k': db_limit = int(amount) * 1024
 			if scale == 'm': db_limit = int(amount) * 1048576
 			if scale == 'g': db_limit = int(amount) * 1073741824
-			output += "Setting db_limit to %i bytes\n" % db_limit
+			output += "Setting db_limit to %i bytes" % db_limit
 			config.safe = False
 			try: config['db_limit'] = db_limit
-			except Exception, err: output = err.message
+			except Exception, err: output = err
 			config['issue_warnings'] = 0
 			config['no_fetching']    = 0
 			config.safe = True
@@ -23,36 +23,36 @@ def parse_option(line,config):
 			output = "User-Agent: %s" % option
 			config.safe = False
 			try: config['useragent'] = option
-			except Exception, err: output = err.message
+			except Exception, err: output = err
 			config.safe = True
-		elif options == "store_binaries":
+		elif directive == "store_binaries":
 			if option == 'on':
 				output = "Storing binaries."
 				config.safe = False
 				try: config['store_binaries'] = 1
-				except Exception, err: output = err.message
+				except Exception, err: output = err
 				config.safe = True
 			if option == 'off':
 				output = "Referencing binaries."
 				config.safe = False
 				try: config['store_binaries'] = 0
-				except Exception, err: output = err.message
+				except Exception, err: output = err
 				config.safe = True
-		elif options == "long_threads":
+		elif directive == "long_threads":
 			if option == 'on':
 				output = "Long threads enabled."
 				config.safe = False
 				try: config['long_threads'] = 1
-				except Exception, err: output = err.message
+				except Exception, err: output = err
 				config.safe = True
 			if option == 'off':
 				output = "Long threads disabled."
 				config.safe = False
 				try: config['long_threads'] = 0
-				except Exception, err: output = err.message
+				except Exception, err: output = err
 				config.safe = True
 
-		else: output = "Unrecognised directive."
+		else: output = 'Unrecognised directive: %s' % directive
 	return output
 
 def uid():
@@ -114,8 +114,8 @@ class Parser(object):
 	def __init__(self,html=None,doc=None,url=None):
 		self.html=html
 		self.doc=doc
-		if url: self.url = urlparse.urlparse(url).netloc
-		else: 	self.url = url
+		try:    self.url = urlparse.urlparse(url).netloc
+		except: self.url = url
 		self.links=[]
 
 	def root_to_urls(self, doc, titles):
@@ -161,7 +161,6 @@ class Parser(object):
 		if not urls: return urls
 		else: urls = set(urls)
 		if url: url = "http://%s/" % urlparse.urlparse(url).netloc
-		if self.url: self.url = "http://%s/" % urlparse.urlparse(url).netloc
 		for u in urls:
 			if url:
 				if u == url: continue
@@ -171,8 +170,10 @@ class Parser(object):
 			if not u.startswith('http'):
 				if url:
 					if (url[-1] == '/') and (u[0] == '/'):  u = url + u[1:]
+					else: u = url+u
 				elif self.url:
 					if (self.url[-1] == '/') and (u[0] == '/'):  u = self.url + u[1:]
+					else: u = self.url+u
 				else: continue
 			self.links.append(u)
 		return self.links

@@ -1,4 +1,4 @@
-import gevent, requests, feedparser,time
+import gevent, requests, feedparser, time, json
 from Article import Article
 from Utils import e, uid, tconv, Parser
 from Cron import parse_timings
@@ -120,11 +120,11 @@ class Feed(object):
 			if self.config['no_fetching']:
 				self.log("%s: Database has reached 100" % self.feed['name'] + "% capacity.",'error')
 				if self.fm:
-					self.fm.put('! Database at 100% capacity.')
+					self.fm.put({'error':'Database at 100% capacity.'})
 				return
 			if self.config['issue_warnings']:
 				if self.fm:
-					self.fm.put('! Database 90% full.')
+					self.fm.put({'error':'Database 90% full.'})
 				self.log("%s: Database has reached 90" % self.feed['name'] + "% capacity.",'warning')
 		self.log('Fetching %s.' % self.feed['name'])
 		if 'useragent' in self.config.config.keys():
@@ -166,7 +166,7 @@ class Feed(object):
 					return
 				a.create(self, r, entry)
 				if self.fm:
-					self.fm.put('+ %s %s %s' % (a['uid'], a['url'], a['title']))
+					self.fm.put({'stream': [ self['uid'], a['uid'], a['title'], a['url']]})
 			else:
 				self.log('%s: Already storing %s "%s"' % (self['name'],a['uid'],a['title']), 'debug')
 				return
