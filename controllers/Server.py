@@ -66,7 +66,13 @@ class Protocol(SocketServer.BaseRequestHandler):
 					while buf.find("\n") != -1:
 						line, buf = buf.split("\n", 1)
 						line = line.rstrip()
-						self.server.log("From %s: %s" % (self.host[0],line),'debug')
+
+						# Prevent passwords being logged in debug mode
+						logline=line
+						if line.startswith('auth') and (' ' in line):
+							logline = ' '.join(line.split()[:-1])
+						self.server.log("From %s: %s" % (self.host[0],logline),'debug')
+
 						response=''
 						if ' ' in line:
 							command, params = line.split(' ', 1)
@@ -175,10 +181,10 @@ class Protocol(SocketServer.BaseRequestHandler):
 				self.send_queue.append(json.dumps(err))
 
 	@restricted
-	def handle_adjust(self, params):
+	def handle_adjust(self, params): # TODO: Unload modified feeds before issuing RESCAN.
 		"""
 		"ADJUST feed | user | db_limit | useragent"
-		"ADJUST feed uid uid uid, timings=15! * * * * name=laughter cookies" 
+		"ADJUST feed uid uid uid, timings=15! * * * * name=laughter cookies"
 		"""
 		if ' ' in params:
 			(command, args) = params.split(' ',1)
@@ -445,7 +451,6 @@ class Pool(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 		self.db = None
 		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
-# TODO: Cannnot access admin cmds
 def get_doc(func, return_json=False):
 	"""
 	Get and format the docstring of a method.

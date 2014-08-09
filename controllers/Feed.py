@@ -143,7 +143,7 @@ class Feed(object):
 			for entry in f.entries:
 				urls.append(entry.link)
 				self.threads.append(gevent.spawn(self.fetch,entry))
-		else: # The following is a slightly experimental feature. You will currently get URLs that are inappropriate.
+		else: # The following is a highly experimental feature.
 			p = Parser(r.text,url=self['url'])
 			urls = p.parse()
 			for url in urls:

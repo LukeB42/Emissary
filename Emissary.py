@@ -27,12 +27,11 @@ class FeedManager(gevent.Greenlet):
 			log("%s %s" % (i,v))
 
 	def receive(self, message):
-		if type(message) == str:
+		if type(message) == dict: self.server.put(message)
+		else:
 			if message == "ping": return
 			(cmd,args) = message.split(' ',1)
 			cmd=cmd.lower()
-#			if len(cmd) == 1:
-#				self.server.put(message)
 			if cmd == 'rescan':
 				if len(args.split()) > 1: (id,username) = args.split()
 				else: return
@@ -41,10 +40,9 @@ class FeedManager(gevent.Greenlet):
 					self.rescan()
 					response = {'success':'RESCAN successfully completed. %s' % id}
 					self.server.put(response)
-				except Exception, e:
-					response = {'error':'RESCAN failed: %s. %s' % (e.message,id)}
+				except Exception, err:
+					response = {'error':'RESCAN failed: %s. %s' % (err,id)}
 					self.server.put(response)
-		else: self.server.put(message)
 
 	def __setitem__(self, name, crontab):
 		if name in self.crontabs.keys():
@@ -183,7 +181,7 @@ def halt(pidfile):
 		pid = None
 		try:
 			f = file(pidfile, 'r')
-			pid = int(f.readline())
+			pid = f.readline().split()
 			f.close()
 			os.unlink(pidfile)
 		except ValueError, e:
@@ -192,8 +190,9 @@ def halt(pidfile):
 		except IOError, e:
 			pass
 		if pid:
-			os.kill(pid, 15)
-			sys.stdout.write('Halted Emissary with a process ID of %s.\n' % pid)
+			for id in pid:
+				os.kill(int(id), 15)
+				sys.stdout.write('Halted Emissary with a process ID of %s.\n' % id)
 		else:
 			sys.stderr.write("Emissary isn't running, or a PID file wasn't found.\n")
 		if not options.restart:
@@ -219,9 +218,8 @@ def daemon(pidfile):
 				f = file(pidfile, 'w')
 				f.write(str(pid))
 				f.close()
-			except IOError, e:
-				logging.error(e)
-				sys.stderr.write(repr(e))
+			except IOError, err:
+				log(err,'error')
 			sys.exit(0) # parent
 	except OSError, e:
 		sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
@@ -232,7 +230,7 @@ def daemon(pidfile):
 		except OSError:
 			pass
 
-VERSION = '0.1'
+VERSION = '1.2'
 if __name__ == '__main__':
 # parse args
 	prog = "Emissary"
@@ -371,6 +369,10 @@ if __name__ == '__main__':
 	log('Listening on %s:%s' % (options.address,options.port))
 	p = Process(target=server.serve_forever)
 	p.start()
+	if not options.foreground:
+		f = file(options.pidfile, 'a')
+		f.write(' %i'%p.pid)
+		f.close()
 
 # revolve
 	while True:
