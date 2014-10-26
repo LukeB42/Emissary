@@ -267,7 +267,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 		if ' ' in params:
 			(command, args) = params.split(' ',1)
 			if command == 'feed':
-				severity = False
+				severity = 0
 				if ' ' in args: (args, severity) = args.split()
 				f = Feed(self.server.db,self.server.log,self.server.config,uid=args)
 				f.delete(severity)
@@ -291,7 +291,7 @@ class Protocol(SocketServer.BaseRequestHandler):
 	@restricted
 	def handle_rescan(self, params=None):
 		"""
-		Forces Emissary to pick up on new feeds and detect whether current ones are up to date.
+		Forces Emissary to pick up on new feeds, halt missing and detect whether current ones are up to date.
 		"""
 		self.server.fm.put('rescan %s %s' % (hex(id(self)), self.user['username']))
 

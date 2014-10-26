@@ -5,10 +5,10 @@ Cron for indexing HTTP resources.
 
 --------
 <pre>
-Emissary runs in the background periodically extracting
-the raw text of online articles, from news sites or blogs.
+Emissary is a daemon for periodically extracting
+the body text of online articles from sites like news agencies and blogs.
 
-A client library is included to facilitate integrating into other programs.
+A client library is included to integrate with other programs.
 
 ./Emissary --start        (default)
 ./Emissary --stop         Stop Emissary immediately.
@@ -25,8 +25,7 @@ A client library is included to facilitate integrating into other programs.
 ./Emissary --port         (defaults to 6362)
 
 
-Add feeds by writing them to a file, then pipe the file:
-
+Add feeds by writing them to a file and then pipe the file into Emissary:
 user@host $ cat feeds.txt
 db_limit 5g
 # url                    name    minute  hour    day month   weekday
