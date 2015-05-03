@@ -1,6 +1,7 @@
 """
+MIT License.
+Luke Brooks 2015
 Database layout for Emissary.
-Luke Brooks 2015, MIT License.
 """
 from emissary import db
 # 
@@ -44,7 +45,7 @@ class Feed(db.Model):
 	id       = db.Column(db.Integer(), primary_key=True)
 	name     = db.Column(db.String(80))
 	url      = db.Column(db.String(80))
-	timings  = db.Column(db.String(80))
+	schedule = db.Column(db.String(80))
 	articles = db.relationship('Article', backref="feed")
 	created  = db.Column(db.DateTime(), default=db.func.now())
 	active   = db.Column(db.Boolean())
