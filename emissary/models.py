@@ -4,6 +4,7 @@ Luke Brooks 2015
 Database layout for Emissary.
 """
 from emissary import db
+from emissary.controllers.utils import uid
 # 
 #       /--Subprocesses for checking feed timing data
 # hermes
@@ -59,8 +60,9 @@ class Feed(db.Model):
 class Article(db.Model):
 	__tablename__ = "articles"
 	id      = db.Column(db.Integer(), primary_key=True)
+	uid     = db.Column(db.String(), default=uid())
 	feed_id = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
-	name    = db.Column(db.String(80))
+	title    = db.Column(db.String(80))
 	content = db.Column(db.String())
 	created = db.Column(db.DateTime(), default=db.func.now())
 
