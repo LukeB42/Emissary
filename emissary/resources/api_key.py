@@ -23,7 +23,7 @@ class KeyCollection(restful.Resource):
 	@gzipped
 	def get(self):
 		key = auth()
-		response = key.jsonify(with_objs=True)
+		response = key.jsonify(feedgroups=True)
 
 		if key.name == app.config['MASTER_KEY_NAME'] or key.systemwide:
 			response['system'] = {}
@@ -33,17 +33,6 @@ class KeyCollection(restful.Resource):
 			for i in APIKey.query.all(): keys.append(i.name)
 			response['system']['keys'] = keys
 			response['system']['permit_new'] = app.config['PERMIT_NEW']
-
-		if key.systemwide:
-			global_users = []
-			global_roles = []
-			global_privs = []
-			for i in User.query.filter(User.key == None).all(): global_users.append(i.username)
-			for i in Role.query.filter(Role.key == None).all(): global_roles.append(i.name)
-			for i in Priv.query.filter(Priv.key == None).all(): global_privs.append(i.name)
-			response['system']['users'] = global_users
-			response['system']['roles'] = global_roles
-			response['system']['privileges'] = global_privs
 
 		return [response]
 

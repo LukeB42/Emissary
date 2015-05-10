@@ -90,5 +90,5 @@ def uid():
 	millis = int(round(time.time() * 1000))
 	dt = datetime.datetime.now()
 	millis = str(millis)+str(dt.microsecond)
-	return str(base64.b64encode(millis)).strip('==')[-13:] # Adjust slicing to suit
+	return str(base64.b64encode(millis)).strip('==')[-7:] # Adjust slicing to suit
 
