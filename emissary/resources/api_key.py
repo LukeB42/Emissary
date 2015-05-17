@@ -147,9 +147,9 @@ class KeyCollection(restful.Resource):
 				if not Priv.query.filter(and_(Priv.name == p.name, Priv.key == None)).first():
 					del p.key
 		else:
-			for u in target.users: db.session.delete(u)
-			for r in target.roles: db.session.delete(r)
-			for p in target.users: db.session.delete(p)
+			for fg in target.feedgroups: db.session.delete(fg)
+			for f  in target.feeds:      db.session.delete(f)
+			for a  in target.articles:   db.session.delete(a)
 
 		db.session.delete(target)
 		db.session.commit()

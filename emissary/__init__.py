@@ -19,9 +19,15 @@ db = SQLAlchemy(app)
 # import models here and models would import that db object just above us
 from models import *
 from resources import api_key
+from resources import feeds
+from resources import feedgroups
 
-api.add_resource(api_key.KeyCollection,    "/keys")
-api.add_resource(api_key.KeyResource,      "/keys/<string:name>")
+api.add_resource(api_key.KeyCollection,          "/keys")
+api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
+api.add_resource(feeds.FeedCollection,           "/feeds")
+api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
+api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
+api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
 
 def init():
 	inspector = Inspector.from_engine(db.engine)

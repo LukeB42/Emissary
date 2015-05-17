@@ -234,7 +234,7 @@ def parse_crontab(db,log):
 
     raise SystemExit
 
-if __name__ == '__main__':
-    c = CronTab(Event(lambda x: print "Hello", range(0,59), range(0,23), dow=range(0,5)))
-    c.run()
+#if __name__ == '__main__':
+#    c = CronTab(Event(lambda x: print "Hello", range(0,59), range(0,23), dow=range(0,5)))
+#    c.run()
 
