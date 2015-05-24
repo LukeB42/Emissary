@@ -5,7 +5,7 @@ Database layout for Emissary.
 """
 import time
 from uuid import uuid4
-from emissary import db
+from emissary import db, app
 from emissary.controllers.utils import uid
 # 
 #       /--Subprocesses for checking feed timing data
@@ -54,6 +54,8 @@ class FeedGroup(db.Model):
 	active  = db.Column(db.Boolean(), default=True)
 
 	def __repr__(self):
+		if self.name:
+			return '<FeedGroup "%s" with %i feeds>' % (self.name, len(self.feeds))
 		return "<FeedGroup>"
 
 	def jsonify(self):
@@ -80,7 +82,14 @@ class Feed(db.Model):
 	articles = db.relationship('Article', backref="feed")
 
 	def __repr__(self):
+		if self.name:
+			return '<Feed "%s" with %i articles>' % (self.name, len(self.articles))
 		return "<Feed>"
+
+	def is_running(self):
+		if app.feedmanager:
+			pass
+		return False
 
 	def jsonify(self, articles=False):
 		response = {}
@@ -92,8 +101,11 @@ class Feed(db.Model):
 			response['schedule'] = self.schedule
 			response['active'] = self.active
 			response['article_count'] = len(self.articles)
+			response['running'] = self.is_running()
 		if self.group:
 			response['group'] = self.group.name
+		else:
+			response['group'] = None
 		return response
 
 

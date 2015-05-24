@@ -1,22 +1,26 @@
 from flask import Flask
 from flask.ext import restful
 from pkgutil import extend_path
+from multiprocessing import Queue
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.engine.reflection import Inspector
 
 __path__ = extend_path(__path__, __name__)
-__all__ = ["client", "controllers", "models", "repl", "resources", "run"]
+__all__ = ["client", "controllers", "models", "resources", "run"]
 
 app = Flask("emissary")
-#app.config.from_object("emissary.config")
+app.config.from_object("emissary.config")
 
 app.version = "1.3"
+app.inbox = Queue()
+app.feedmanager = None
 app.config["HTTP_BASIC_AUTH_REALM"] = "Emissary " + app.version
-api = restful.Api(app, prefix='/v1')
+
 db = SQLAlchemy(app)
+api = restful.Api(app, prefix='/v1')
 
 # Models are imported here to prevent a circular import where we would
-# import models here and models would import that db object just above us
+# import models and the models would import that db object just above us.
 from models import *
 from resources import api_key
 from resources import feeds
@@ -42,4 +46,3 @@ def init():
 		master.active = True
 		db.session.add(master)
 		db.session.commit()
-

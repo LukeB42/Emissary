@@ -1,3 +1,5 @@
+# This file provides the HTTP endpoints for creating, modifying and reviewing
+# feed groups.
 from emissary import db
 from flask import request
 from flask.ext import restful
@@ -9,10 +11,18 @@ class FeedGroupCollection(restful.Resource):
 
 	@gzipped
 	def get(self):
-		return {}
+		"""
+		 Return an array of JSON objects for each feed group
+		 associated with the requesting API key.
+		"""
+		key = auth()
+		return [fg.jsonify() for fg in key.feedgroups]
 
 	@gzipped
 	def put(self):
+		"""
+		 Create a new feed group, providing the name isn't already in use.
+		"""
 		key = auth()
 
 		parser = restful.reqparse.RequestParser()
@@ -51,4 +61,11 @@ class FeedGroupResource(restful.Resource):
 
 	@gzipped
 	def get(self, name):
-		return {}
+		"""
+		 Review a specific feed group.
+		"""
+		key = auth()
+		fg = [fg for fg in key.feedgroups if fg.name == name]
+		if fg:
+			return fg[0].jsonify()
+		restful.abort(404)

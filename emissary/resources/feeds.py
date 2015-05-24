@@ -1,5 +1,4 @@
-# Feeds require groups.
-#POST name, group, url, schedule
+# This file provides the HTTP endpoints for operating on feeds
 from emissary import db
 from flask import request
 from flask.ext import restful
@@ -12,12 +11,19 @@ class FeedCollection(restful.Resource):
 
 	@gzipped
 	def get(self):
+		"""
+		 Review all feeds associated with this key.
+		"""
 		key = auth()
 		
 		return {}
 
 	@gzipped
 	def put(self):
+		"""
+		 Create a new feed providing the name and url are unique.
+		 Feeds must be associated with a group.
+		"""
 		key = auth()
 
 		parser = restful.reqparse.RequestParser()
@@ -40,6 +46,10 @@ class FeedCollection(restful.Resource):
 		except CronError, err:
 			return {"message": err.message}, 500
 
+		# Check the URL and name is unique.
+		if [feed for feed in key.feeds if feed.name == args.name or feed.url == args.url]:
+			return {"message": "A feed on this key already exists with this name or url."}, 500
+
 		feed = Feed(name=args.name, url=args.url, schedule=args.schedule, active=args.active)
 		fg.feeds.append(feed)
 		key.feeds.append(feed)
@@ -52,6 +62,9 @@ class FeedCollection(restful.Resource):
 
 	@gzipped
 	def post(self):
+		"""
+		 Modify an existing feed.
+		"""
 		key = auth()
 
 		parser = restful.reqparse.RequestParser()
@@ -66,12 +79,19 @@ class FeedCollection(restful.Resource):
 
 	@gzipped
 	def delete(self):
+		"""
+		 Halt and delete a feed.
+		 Default to deleting its articles.
+		"""
 		return {}
 
 class FeedResource(restful.Resource):
 
 	@gzipped
 	def get(self, name):
+		"""
+		 Review a feed.
+		"""
 		key = auth()
 		feed = [feed for feed in key.feeds if feed.name == name]
 		if feed:

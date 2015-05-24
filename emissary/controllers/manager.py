@@ -1,11 +1,15 @@
 import gevent.monkey
 gevent.monkey.patch_all()
 from gevent.queue import Queue
-import sys, os, time, pwd, optparse, gevent,
-from multiprocessing import Process, Queue as MPQueue
+import sys, os, time, pwd, optparse, gevent
+#from multiprocessing import Process, Queue as MPQueue
 
-sys.path.append(os.path.curdir)
-from controllers import Log, Cron, Feed, Config, Utils, Client, Server
+#sys.path.append(os.path.curdir)
+#from controllers import Log, Cron, Feed, Config, Utils, Client, Server
+
+from emissary.models import Feed, FeedGroup
+from emissary.controllers import cron
+from emissary.controllers import fetch
 
 class EmissaryError(Exception):
 	def __init__(self, message):
@@ -13,18 +17,91 @@ class EmissaryError(Exception):
 	def __str__(self):
 		return repr(self.message)
 
-class FeedManager(gevent.Greenlet):
+class FeedManager(object):
 	"""Keeps CronTab objects in rotation"""
-	def __init__(self):
-		self.inbox 		 = None
-		self.running 	 = False
-		self.crontabs 	 = {}
-		self.threads 	 = []
-		gevent.Greenlet.__init__(self)
+	def __init__(self, log):
+		self.log         = log
+		self.inbox       = Queue()
+		self.running     = False
+		self.crontabs    = {}
+		self.threads     = []
+		self.revived     = {} # {name: [amt, time]}
+#		gevent.Greenlet.__init__(self)
+
+	def load_feeds(self):
+		"""
+		 Currently just starts all feeds flat, by checking if they and their
+		 FeedGroup are active.
+		"""
+		for feed in Feed.query.all():
+			if feed.active:
+				if feed.group and not feed.group.active: continue
+
+				if feed.group:
+					self.log('%s: Scheduling "%s" (%s)' % (feed.group.name,feed.name,feed.schedule))
+				else:
+					self.log('Scheduling "%s" (%s)' % feed.name, feed.schedule)
+				ct = self.create_crontab(feed)
+				g  = gevent.spawn(ct.run)
+				self.threads.append(g)
+				self.crontabs[feed.name] = ct
+
+	def run(self):
+		"""
+		 Receive inbox messages and revive feeds.
+		 Also block crontab from executing every second.
+		"""
+		self.running = True
+		while self.running:
+			gevent.sleep()
+			for ct in self.crontabs.values():
+				if ct.inbox.empty():
+					ct.inbox.put("ping")
+				self.revive(ct)
+			for i in self.threads:
+				if i.started == False:
+					self.threads.remove(i)
+		self.log("Cleaning up..")
+
+	def create_crontab(self, feed):
+		t        = cron.parse_timings(feed.schedule.split())
+		evt      = cron.Event(fetch.fetch_feed,t[0], t[1], t[2], t[3], t[4], [feed, self.log])
+		evt.feed = feed
+		ct       = cron.CronTab(evt)
+		ct.name  = feed.name
+		ct.inbox = Queue()
+		ct.fm    = self.inbox
+		return ct
+
+	def revive(self, ct):
+		"""
+		 Restart a dead crontab.
+		 Permit a ceiling amount of restarts.
+		 Only restart a feed once per minute.
+		"""
+		if ct.name in self.revived:
+			now = time.time()
+			then = self.revived[ct.name][1]
+			if (now - then) < 60:
+				return
+			self.revived[ct.name][0] += 1
+			self.revived[ct.name][1] = now
+		else:
+			self.revived[ct.name] = [1, time.time()]
+
+
+		if ct.started == False:
+			feed         = ct.events[0].feed
+			ct = self.create_crontab(feed)
+			self[feed.name] = ct
+			if feed.name in self.crontabs.keys():
+				self.log("Restarting %s" % ct.name, "warning")
+			self.crontabs[ct.name] = ct
+			self.log(self.crontabs)
 
 	def __call__(self):
 		for i,v in enumerate(self.threads):
-			log("%s %s" % (i,v))
+			self.log("%s %s" % (i,v))
 
 	def receive(self, message):
 		if type(message) == dict: self.server.put(message)
@@ -35,7 +112,7 @@ class FeedManager(gevent.Greenlet):
 			if cmd == 'rescan':
 				if len(args.split()) > 1: (id,username) = args.split()
 				else: return
-				log('rescan event initiated by %s.' % username)
+				self.log('rescan event initiated by %s.' % username)
 				try:
 					self.rescan()
 					response = {'success':'RESCAN successfully completed. %s' % id}
@@ -47,9 +124,9 @@ class FeedManager(gevent.Greenlet):
 	def __setitem__(self, name, crontab):
 		if name in self.crontabs.keys():
 			if crontab.name:
-				log("Restarting %s" % crontab.name, "warning")
+				self.log("Restarting %s" % crontab.name, "warning")
 			else:
-				log("Restarting %s" % name, "warning")
+				self.log("Restarting %s" % name, "warning")
 		crontab.name = name
 		self.crontabs[name] = crontab
 
@@ -74,8 +151,8 @@ class FeedManager(gevent.Greenlet):
 		for f in db[config['feed_table']].find():
 			stored_feeds.append(f['uid'])
 			if f['uid'] not in self.crontabs.keys():
-				log("Scheduling %s" % f['name'])
-				feed		 	= Feed.Feed(db,log,config,uid=f['uid'])
+				self.log("Scheduling %s" % f['name'])
+				feed		 	= Feed.Feed(db,self.log,config,uid=f['uid'])
 				feed.fm		 	= self.inbox
 				feed.inbox	 	= Queue()
 				t 			 	= Cron.parse_timings(feed['timings'].split())
@@ -107,7 +184,7 @@ class FeedManager(gevent.Greenlet):
 				if len(g.name.split()) > 1:	continue # Monitor Database Size
 				g.inbox.put('ping') 
 				if g.started == False: # Restart dead feeds
-					f 			 = Feed.Feed(db,log,config,uid=g.name)
+					f 			 = Feed.Feed(db,self.log,config,uid=g.name)
 					f.fm		 = self.inbox
 					f.inbox		 = Queue()
 					t 			 = Cron.parse_timings(f['timings'].split())
@@ -119,6 +196,7 @@ class FeedManager(gevent.Greenlet):
 			for i in self.threads:
 				if i.started == False:
 					self.threads.remove(i)
+
 
 # Defined here instead of Cron.py to prevent circular imports
 # Where Cron.parse_crontab would import Feed would import Cron.parse_timings

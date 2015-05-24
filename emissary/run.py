@@ -1,10 +1,24 @@
 #!/usr/bin/env python
+# _*_ coding: utf-8 _*_
+
+import gevent
+from gevent.socket import socket
+from gevent.wsgi import WSGIServer
+from gevent import monkey; monkey.patch_all()
+from gevent.queue import Queue
+
 import os
 import sys
 import pwd
 import time
+import _socket
 import optparse
-from emissary import app
+from multiprocessing import Process
+
+
+from emissary import app, init, db
+from emissary.controllers.log import Log
+from emissary.controllers.manager import FeedManager
 
 try:
 	import setproctitle
@@ -46,18 +60,32 @@ def Daemonise(pidfile):
 if __name__ == "__main__":
 	prog = "Emissary"
 	description = "A cronlike program for indexing HTTP resources."
-	epilog = "psybernetics.org.uk %s" % time.asctime().split()[-1]
+	epilog = "Psybernetics %s" % time.asctime().split()[-1]
 	parser = optparse.OptionParser(prog=prog,version=app.version,description=description,epilog=epilog)
 
-	parser.set_usage('python -m emissary.run')
-	parser.add_option("-p", "--port", dest="port", action="store", default='6362')
+	parser.set_usage('python -m emissary.run [options]')
+	parser.add_option("-c", dest="config", action="store", default=None, help="(defaults to emissary.config)")
+	parser.add_option("-a", "--address", dest="address", action="store", default='0.0.0.0', help="(defaults to 0.0.0.0)")
+	parser.add_option("-p", "--port", dest="port", action="store", default='6362', help="(defaults to 6362)")
+	parser.add_option("-i", "--interactive", dest="interactive", action="store_true", default=False, help="Launch interactive console")
 	parser.add_option("--key", dest="key", action="store", default=None, help="SSL key file")
 	parser.add_option("--cert", dest="cert", action="store", default=None, help="SSL certificate")
-	parser.add_option("--pidfile", dest="pidfile", action="store", default="emissary.pid", help="Defaults to ./emissary.pid")
+	parser.add_option("--pidfile", dest="pidfile", action="store", default="emissary.pid", help="(defaults to ./emissary.pid)")
+	parser.add_option("--logfile", dest="logfile", action="store", default="emissary.log", help="(defaults to ./emissary.log)")
 	parser.add_option("--stop", dest="stop", action="store_true", default=False)
-	parser.add_option("--debug", dest="debug", action="store_true", default=False, help="Log debug messages")
+	parser.add_option("--debug", dest="debug", action="store_true", default=False, help="Log to stdout")
 	parser.add_option("-d", dest="daemonise", action="store_true", default=False, help="Run in the background")
+	parser.add_option("--run-as", dest="run_as", action="store",default=None, help="(defaults to the invoking user)")
 	(options,args) = parser.parse_args()
+
+	if options.config:
+		app.config.from_object(options.config)
+
+	app.debug = options.debug
+
+	# Build logger from config
+	log = Log("Emissary", log_file=options.logfile, log_stdout=options.debug)
+	app.log = log
 
 	if options.stop:
 		pid = None
@@ -78,6 +106,8 @@ if __name__ == "__main__":
 			sys.stderr.write('Emissary not running or no PID file found\n')
 		sys.exit(0)
 
+#	if options.interactive:
+#		repl.run()
 
 	if not options.key and not options.cert:
 		print "SSL cert and key required. (--key and --cert)"
@@ -95,12 +125,55 @@ if __name__ == "__main__":
 	if not os.path.isfile(options.key):
 		sys.exit("Key not found at %s" % options.key)
 
-	if (pwd.getpwuid(os.getuid())[2] == 0):
+	if (pwd.getpwuid(os.getuid())[2] == 0) and not options.run_as:
 		print "Running as root is not permitted.\nExecute this as a different user."
 		raise SystemExit
 
+	sock = (options.address, int(options.port))
+
+	if options.run_as:
+		sock = socket(family=_socket.AF_INET)
+		try:
+			sock.bind((options.address, int(options.port)))
+		except _socket.error:
+			ex = sys.exc_info()[1]
+			strerror = getattr(ex, 'strerror', None)
+			if strerror is not None:
+				ex.strerror = strerror + ': ' + repr(options.address+':'+options.port)
+			raise
+		sock.listen(50)
+		sock.setblocking(0)
+		uid = pwd.getpwnam(options.run_as)[2]
+		try:
+			os.setuid(uid)
+			log("Now running as %s." % options.run_as)
+		except Exception, e: raise
+
+	# Create the database schema and insert an administrative key
+	init()
+
 	if options.daemonise: Daemonise(options.pidfile)
 
-	# Initialise the feed manager and run the httpd.
-	app.run(host="0.0.0.0", port=int(options.port), debug=options.debug,
-		ssl_context=(options.cert, options.key))
+	# Initialise the feed manager with the logger, load feeds and create inter-process
+	# communication channels.
+	fm = FeedManager(log)
+	fm.load_feeds()
+	fm.server       = app.inbox
+	app.feedmanager = fm.inbox
+
+	# Start the REST interface
+	httpd = WSGIServer(sock, app, certfile=options.cert, keyfile=options.key)
+	httpd_process = Process(target=httpd.serve_forever)
+	log("Binding to %s:%s" % (options.address, options.port))
+	httpd_process.start()
+
+	if options.daemonise:
+		f = file(options.pidfile, 'a')
+		f.write(' %i' % p.pid)
+		f.close()
+
+	try:
+		fm.run()
+	except KeyboardInterrupt:
+		log("Stopping...")
+		httpd_process.terminate()
