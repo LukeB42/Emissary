@@ -7,7 +7,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.engine.reflection import Inspector
 
 __path__ = extend_path(__path__, __name__)
-__all__ = ["client", "controllers", "models", "resources", "run"]
+__all__ = ["client", "controllers", "models", "resources", "run", "repl"]
 
 app = Flask("emissary")
 app.config.from_object("emissary.config")

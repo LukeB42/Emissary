@@ -92,3 +92,42 @@ def uid():
 	millis = str(millis)+str(dt.microsecond)
 	return str(base64.b64encode(millis)).strip('==')[-7:] # Adjust slicing to suit
 
+def tconv(seconds):
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    weeks, days = divmod(days, 7)
+    s=""
+    if weeks:
+        if weeks == 1:
+            s+= "1 week, "
+        else:
+            s+= "%i weeks, " % (weeks)
+    if days:
+        if days == 1:
+            s+= "1 day, "
+        else:
+            s+= "%i days, " % (days)
+    if hours:
+        if hours == 1:
+            s+= "1 hour, "
+        else:
+            s+= "%i hours, " % (hours)
+    if minutes:
+        if minutes == 1:
+            s+= "1 minute"
+        else:
+            s+= "%i minutes" % (minutes)
+    if seconds:
+        if len(s) > 0:
+            if seconds == 1:
+                s+= " and %i second" % (seconds)
+            else:
+                s+= " and %i seconds" % (seconds)
+        else:
+            if seconds == 1:
+                s+= "1 second"
+            else:
+                s+= "%i seconds" % (seconds)
+    return s
+

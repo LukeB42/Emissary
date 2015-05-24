@@ -5,6 +5,7 @@ from emissary import app, db
 from sqlalchemy import and_, or_
 from emissary.models import Article
 from emissary.controllers import parser
+from emissary.controllers.utils import uid
 requests.packages.urllib3.disable_warnings()
 
 def get(url):
@@ -37,6 +38,7 @@ def fetch_feed(feed, log):
 
 		# Skip this url if we've already extracted and stored it for this feed.
 		if Article.query.filter(and_(Article.url == url), Article.feed == feed).first():
+			log("%s/%s: Already storing %s" % (feed.group.name,feed.name,url), "debug")
 			continue
 
 		try:
@@ -80,6 +82,9 @@ def commit(feed, article):
 	 Place a new article on the api key of a feed, the feed itself,
 	 and commit changes.
 	"""
+
+	article.uid = uid()
+
 	session = feed._sa_instance_state.session
 	feed.articles.append(article)
 	feed.key.articles.append(article)
@@ -88,3 +93,4 @@ def commit(feed, article):
 	session.add(feed)
 	session.commit()
 
+	app.log(article.uid)

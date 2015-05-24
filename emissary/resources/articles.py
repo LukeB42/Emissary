@@ -15,7 +15,7 @@ class ArticleCollection(restful.Resource):
 		 Review all articles associated with this key.
 		"""
 		key = auth()
-		return [article.jsonify() for article in key.articles]
+		return [article.jsonify() for article in key.articles][20:]
 
 	@gzipped
 	def put(self):
