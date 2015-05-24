@@ -1,3 +1,4 @@
+# _*_ coding: utf-8 _*_
 from flask import Flask
 from flask.ext import restful
 from pkgutil import extend_path
@@ -25,6 +26,8 @@ from models import *
 from resources import api_key
 from resources import feeds
 from resources import feedgroups
+from resources import articles
+
 
 api.add_resource(api_key.KeyCollection,          "/keys")
 api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
@@ -32,6 +35,8 @@ api.add_resource(feeds.FeedCollection,           "/feeds")
 api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
 api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
 api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
+api.add_resource(articles.ArticleCollection,     "/articles")
+api.add_resource(articles.ArticleResource,       "/articles/<string:uid>")
 
 def init():
 	inspector = Inspector.from_engine(db.engine)

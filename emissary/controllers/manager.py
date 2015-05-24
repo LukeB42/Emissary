@@ -2,10 +2,6 @@ import gevent.monkey
 gevent.monkey.patch_all()
 from gevent.queue import Queue
 import sys, os, time, pwd, optparse, gevent
-#from multiprocessing import Process, Queue as MPQueue
-
-#sys.path.append(os.path.curdir)
-#from controllers import Log, Cron, Feed, Config, Utils, Client, Server
 
 from emissary.models import Feed, FeedGroup
 from emissary.controllers import cron
@@ -88,7 +84,6 @@ class FeedManager(object):
 			self.revived[ct.name][1] = now
 		else:
 			self.revived[ct.name] = [1, time.time()]
-
 
 		if ct.started == False:
 			feed         = ct.events[0].feed

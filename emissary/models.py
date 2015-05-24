@@ -1,3 +1,4 @@
+# _*_ coding: utf-8 _*_
 """
 MIT License.
 Luke Brooks 2015
@@ -116,14 +117,32 @@ class Article(db.Model):
 	uid     = db.Column(db.String(), default=uid())
 	feed_id = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	title   = db.Column(db.String(80))
+	url     = db.Column(db.String())
 	content = db.Column(db.String())
+	summary = db.Column(db.String())
 	created = db.Column(db.DateTime(), default=db.func.now())
 
 	def __repr__(self):
+		if self.content:
+			return '<Article "%s">' % self.title.encode("utf-8", "ignore")
+		if self.url and self.title:
+			return "<Article reference to %s>" % self.title.encode("utf-8", "ignore")
 		return "<Article>"
 
-	def jsonify(self):
-		return {}
+	def jsonify(self, summary=False, content=False):
+		response = {}
+		if self.title:
+			response['title'] = self.title
+			response['url'] = self.url	
+			response['uid'] = self.uid
+			response['created'] = time.mktime(self.created.timetuple())
+		if self.feed:
+			response['feed'] = self.feed.name
+		if content and self.content:
+			response['content'] = self.content
+		if summary and self.summary:
+			response['summary'] = self.summary
+		return response
 
 class Event(db.Model):
 	__tablename__ = "events"
