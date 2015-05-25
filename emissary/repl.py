@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import cmd
 import json
 import time
@@ -63,6 +64,9 @@ class repl(cmd.Cmd):
 		response = self.c._send_request(line, 'POST', body)
 		self.display(response)
 
+	def do_exit(self,line):
+		raise SystemExit
+
 	def do_read(self,line):
 		then = time.time()
 		response = self.c._send_request("articles/" + line)
@@ -79,9 +83,12 @@ class repl(cmd.Cmd):
 			p = Popen(['less', '-P', data['title']], stdin=PIPE)
 
 			try:
-				duration = tconv(then - data['created'])
-				p.stdin.write('%s (%i lines, fetched %s ago)\n\n' % \
-					(data['title'].encode("utf-8", "ignore"), len(data['content'].encode("utf-8","ignore").split("\n"))/2+1, duration))
+				duration = tconv(int(then) - int(data['created']))
+				p.stdin.write('%s (%i lines, fetched %s ago)\n%s\n\n' % \
+					(data['title'].encode("utf-8", "ignore"),
+					len(data['content'].encode("utf-8","ignore").split("\n"))/2+1,
+					duration,
+					data['url'].encode("utf-8","ignore")))
 				p.stdin.write(data['content'].encode("utf-8","ignore"))
 
 			except IOError as e:
@@ -105,6 +112,7 @@ class repl(cmd.Cmd):
 		self.display(response)
 
 	def do_EOF(self,line):
+		print "^D",
 		return True
 
 	def postloop(self):
@@ -154,4 +162,8 @@ if __name__ == "__main__":
 			for s in r.AVAILABLE_STYLES: break
 			r.style = s
 	r.c._send_request = reqwrap(r.c._send_request)
-	r.cmdloop()
+	try:
+		r.cmdloop()
+	except KeyboardInterrupt:
+		print "^C"
+		raise SystemExit

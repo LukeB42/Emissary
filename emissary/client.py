@@ -69,16 +69,5 @@ class Client(object):
 	def privs(self, type='GET', body={}, headers={}):
 		return self._send_request("privs", type, body, headers)
 
-	def user(self):
-		if not self.username: raise Exception("No username attribute defined.")
-		return self._send_request('users/' + self.username)[0]
-
-	def can(self, priv):
-		if self.username:
-			(resp, status) =  self._send_request('users/%s?can=%s' % \
-				(self.username, priv))
-			if status == 200: return resp
-		raise Exception("No username attribute defined.")
-
 	def __repr__(self):
 		return "<API Client for %s>" % self.base

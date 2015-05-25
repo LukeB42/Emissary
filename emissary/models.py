@@ -114,7 +114,7 @@ class Article(db.Model):
 	__tablename__ = "articles"
 	id      = db.Column(db.Integer(), primary_key=True)
 	key_id  = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
-	uid     = db.Column(db.String(), default=uid())
+	uid     = db.Column(db.String())
 	feed_id = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	title   = db.Column(db.String(80))
 	url     = db.Column(db.String())
@@ -140,6 +140,11 @@ class Article(db.Model):
 			response['feed'] = self.feed.name
 		if content and self.content:
 			response['content'] = self.content
+		if not content:
+			if self.content:
+				response['content_available'] = True
+			else:
+				response['content_available'] = False
 		if summary and self.summary:
 			response['summary'] = self.summary
 		return response

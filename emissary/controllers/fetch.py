@@ -1,3 +1,4 @@
+import time
 import urlparse
 import requests
 import feedparser
@@ -7,6 +8,8 @@ from emissary.models import Article
 from emissary.controllers import parser
 from emissary.controllers.utils import uid
 requests.packages.urllib3.disable_warnings()
+
+seen = {}
 
 def get(url):
 	headers = {"User-Agent": "Emissary "+ app.version}
@@ -28,54 +31,85 @@ def fetch_feed(feed, log):
 	# Fetch the links and create articles
 	links = parser.extract_links(r)
 	title = None
-	for link in links: 
-		# If the feed was XML data then we probably have a dictionary of
-		# url:title pairs, otherwise we have a list of urls.
-		if type(link) == dict:
-			for url, title in link.items(): continue
-		else:
-			url = link
+	for link in links:
+		fetch_and_store(link, feed, log)
 
-		# Skip this url if we've already extracted and stored it for this feed.
-		if Article.query.filter(and_(Article.url == url), Article.feed == feed).first():
+def fetch_and_store(link, feed, log, key=None, overwrite=False):
+	"""
+	 Fetches, extracts and stores a URL.
+	 link can be a list of urls or a dictionary of url/title pairs.
+	"""
+	# If the feed was XML data then we probably have a dictionary of
+	# url:title pairs, otherwise we have a list of urls.
+	if type(link) == dict:
+		for url, title in link.items(): continue
+	else:
+		url = link
+
+	# Skip this url if we've already extracted and stored it for this feed, unless we're overwriting.
+	if Article.query.filter(and_(Article.url == url), Article.feed == feed).first():
+		if overwrite:
+			log("%s/%s: Preparing to overwrite existing copy of %s" % \
+				(feed.group.name,feed.name,url), "debug")
+		else:
 			log("%s/%s: Already storing %s" % (feed.group.name,feed.name,url), "debug")
-			continue
+			return
 
-		try:
-			document = get(url)
-		except Exception, e:
-			log("%s/%s: Error fetching %s: %s" % (feed.group.name,feed.name,url,e.message[0]))
-			continue
+	# Store our awareness of this url during this run in a globally available dictionary,
+	# in the form [counter, timestamp].
+	if url not in seen:
+		seen[url]  = [1, int(time.time())]
+	else:
+		# If we haven't modified the counter for half an hour, reset it.
+		now = int(time.time())
+		if (now - seen[url][1]) > 60*30:
+			seen[url] = [1, int(time.time())]
+		# If we have tried this URL four times, disregard it.
+		# We might reset its counter in half an hour anyway.
+		if seen[url][0] >= 4:
+			return
+		# Otherwise increment and continue with storing.
+		seen[url][0] += 1
+		seen[url][1] = int(time.time())
 
-		# Mimetype detection.
-		if 'content-type' in document.headers:
-			if 'application' in document.headers['content-type']:
-				article = Article(
-					url=url,
-					title=title,
-				)
-				commit(feed, article)
-				log("%s/%s: Storing reference to %s (%s)" % \
-					(feed.group.name, feed.name, url, document.headers['content-type']))
-				continue
+	try:
+		document = get(url)
+	except Exception, e:
+		log("%s/%s: Error fetching %s: %s" % (feed.group.name,feed.name,url,e.message[0]))
+		return
 
-		if title:
-			log('%s/%s: Extracting "%s"' % (feed.group.name, feed.name, title))
-		else:
-			log("%s/%s: Extracting %s" % (feed.group.name, feed.name, url))
+	# Mimetype detection.
+	if 'content-type' in document.headers:
+		if 'application' in document.headers['content-type']:
+			article = Article(
+				url=url,
+				title=title,
+			)
+			commit(feed, article)
+			log("%s/%s: Storing %s, reference to %s (%s)" % \
+				(feed.group.name, feed.name, article.uid, url, document.headers['content-type']))
+			return
 
+	if title:
+		log('%s/%s: Extracting "%s"' % (feed.group.name, feed.name, title))
+	else:
+		log("%s/%s: Extracting %s" % (feed.group.name, feed.name, url))
+	try:
 		article_text = parser.extract_body(document.text)
 		summary      = parser.summarise(article_text)
+	except Exception, e:
+		log("Error parsing %s: %s" % (url, e.message))
+		return
 
-		article = Article(
-			url=url,
-			title=title,
-			content=article_text,
-			summary=summary
-		)
+	article = Article(
+		url=url,
+		title=title,
+		content=article_text,
+		summary=summary
+	)
 
-		commit(feed, article)
-		log('%s/%s: Stored "%s"' % (feed.group.name,feed.name,article.title))
+	commit(feed, article)
+	log('%s/%s: Stored %s "%s"' % (feed.group.name,feed.name,article.uid, article.title))
 
 def commit(feed, article):
 	"""
@@ -92,5 +126,3 @@ def commit(feed, article):
 	session.add(article)
 	session.add(feed)
 	session.commit()
-
-	app.log(article.uid)

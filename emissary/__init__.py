@@ -20,25 +20,34 @@ app.config["HTTP_BASIC_AUTH_REALM"] = "Emissary " + app.version
 db = SQLAlchemy(app)
 api = restful.Api(app, prefix='/v1')
 
-# Models are imported here to prevent a circular import where we would
-# import models and the models would import that db object just above us.
-from models import *
-from resources import api_key
-from resources import feeds
-from resources import feedgroups
-from resources import articles
-
-
-api.add_resource(api_key.KeyCollection,          "/keys")
-api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
-api.add_resource(feeds.FeedCollection,           "/feeds")
-api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
-api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
-api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
-api.add_resource(articles.ArticleCollection,     "/articles")
-api.add_resource(articles.ArticleResource,       "/articles/<string:uid>")
-
 def init():
+	# Models are imported here to prevent a circular import where we would
+	# import models and the models would import that db object just above us.
+
+	# They're also imported here in this function because they implicitly
+	# monkey-patch the threading module, and we might not need that if all we want
+	# from the namespace is something like app.version, like in repl.py for example.
+	from models import APIKey
+	from models import FeedGroup
+	from models import Feed
+	from models import Article
+	from models import Event
+
+	from resources import api_key
+	from resources import feeds
+	from resources import feedgroups
+	from resources import articles
+
+	api.add_resource(api_key.KeyCollection,          "/keys")
+	api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
+	api.add_resource(feeds.FeedCollection,           "/feeds")
+	api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
+	api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
+	api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
+	api.add_resource(articles.ArticleCollection,     "/articles")
+	api.add_resource(articles.ArticleResource,       "/articles/<string:uid>")
+
+	# Create the database schema if it's not already laid out.
 	inspector = Inspector.from_engine(db.engine)
 	tables = [table_name for table_name in inspector.get_table_names()]
 

@@ -9,13 +9,14 @@ from emissary.controllers.cron import CronError, parse_timings
 
 class ArticleCollection(restful.Resource):
 
-	@gzipped
 	def get(self):
 		"""
 		 Review all articles associated with this key.
 		"""
 		key = auth()
-		return [article.jsonify() for article in key.articles][20:]
+		response = [article.jsonify() for article in key.articles][10:]
+		response.reverse()
+		return response[:5]
 
 	@gzipped
 	def put(self):
@@ -41,7 +42,6 @@ class ArticleCollection(restful.Resource):
 
 class ArticleResource(restful.Resource):
 
-	@gzipped
 	def get(self, uid):
 		"""
 		 Read an article.

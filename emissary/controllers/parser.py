@@ -11,7 +11,9 @@ def extract_links(response):
 		for entry in f.entries:
 			urls.append({entry.link: entry.title})
 	else: # The following is a highly experimental feature.
-		p = Parser(r.text,url=self['url'])
+		url = urlparse.urlparse(response.url)
+		url = url.scheme + "://" + url.netloc
+		p = Parser(response.text, url=url)
 		urls = p.parse()
 	return urls
 
