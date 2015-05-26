@@ -10,6 +10,9 @@ __path__ = extend_path(__path__, __name__)
 __all__ = ["client", "controllers", "models", "resources", "run", "repl"]
 
 app = Flask("emissary")
+
+# This config is the default and can be overridden by
+# using options.config in run.py (python -m emissary.run -c somefile.py)
 app.config.from_object("emissary.config")
 
 app.version = "1.3"

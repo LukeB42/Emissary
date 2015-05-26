@@ -6,7 +6,7 @@ from emissary import app, db
 from sqlalchemy import and_, or_
 from emissary.models import Article
 from emissary.controllers import parser
-from emissary.controllers.utils import uid
+from emissary.controllers.utils import uid, tconv
 requests.packages.urllib3.disable_warnings()
 
 seen = {}
@@ -39,6 +39,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	 Fetches, extracts and stores a URL.
 	 link can be a list of urls or a dictionary of url/title pairs.
 	"""
+	then = int(time.time())
 	# If the feed was XML data then we probably have a dictionary of
 	# url:title pairs, otherwise we have a list of urls.
 	if type(link) == dict:
@@ -49,10 +50,10 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	# Skip this url if we've already extracted and stored it for this feed, unless we're overwriting.
 	if Article.query.filter(and_(Article.url == url), Article.feed == feed).first():
 		if overwrite:
-			log("%s/%s: Preparing to overwrite existing copy of %s" % \
+			log("%s:%s: Preparing to overwrite existing copy of %s" % \
 				(feed.group.name,feed.name,url), "debug")
 		else:
-			log("%s/%s: Already storing %s" % (feed.group.name,feed.name,url), "debug")
+			log("%s:%s: Already storing %s" % (feed.group.name,feed.name,url), "debug")
 			return
 
 	# Store our awareness of this url during this run in a globally available dictionary,
@@ -75,7 +76,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	try:
 		document = get(url)
 	except Exception, e:
-		log("%s/%s: Error fetching %s: %s" % (feed.group.name,feed.name,url,e.message[0]))
+		log("%s:%s: Error fetching %s: %s" % (feed.group.name,feed.name,url,e.message[0]))
 		return
 
 	# Mimetype detection.
@@ -90,10 +91,10 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 				(feed.group.name, feed.name, article.uid, url, document.headers['content-type']))
 			return
 
-	if title:
-		log('%s/%s: Extracting "%s"' % (feed.group.name, feed.name, title))
-	else:
-		log("%s/%s: Extracting %s" % (feed.group.name, feed.name, url))
+#	if title:
+#		log('%s:%s: Extracting "%s"' % (feed.group.name, feed.name, title))
+#	else:
+#		log("%s:%s: Extracting %s" % (feed.group.name, feed.name, url))
 	try:
 		article_text = parser.extract_body(document.text)
 		summary      = parser.summarise(article_text)
@@ -109,7 +110,10 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	)
 
 	commit(feed, article)
-	log('%s/%s: Stored %s "%s"' % (feed.group.name,feed.name,article.uid, article.title))
+	now = int(time.time())
+	duration = tconv(now-then)
+	log('%s:%s: Stored %s "%s" (%s)' % \
+		(feed.group.name, feed.name, article.uid, article.title, duration))
 
 def commit(feed, article):
 	"""

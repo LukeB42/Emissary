@@ -16,7 +16,7 @@ class FeedCollection(restful.Resource):
 		"""
 		key = auth()
 		
-		return {}
+		return [feed.jsonify() for feed in key.feeds]
 
 	@gzipped
 	def put(self):

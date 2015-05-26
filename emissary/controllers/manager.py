@@ -3,7 +3,7 @@ gevent.monkey.patch_all()
 from gevent.queue import Queue
 import sys, os, time, pwd, optparse, gevent
 
-from emissary.models import Feed, FeedGroup
+from emissary.models import Feed, FeedGroup, APIKey
 from emissary.controllers import cron
 from emissary.controllers import fetch
 
@@ -28,19 +28,32 @@ class FeedManager(object):
 		"""
 		 Currently just starts all feeds flat, by checking if they and their
 		 FeedGroup are active.
-		"""
-		for feed in Feed.query.all():
-			if feed.active:
-				if feed.group and not feed.group.active: continue
 
-				if feed.group:
-					self.log('%s: Scheduling "%s" (%s)' % (feed.group.name,feed.name,feed.schedule))
-				else:
-					self.log('Scheduling "%s" (%s)' % feed.name, feed.schedule)
-				ct = self.create_crontab(feed)
-				g  = gevent.spawn(ct.run)
-				self.threads.append(g)
-				self.crontabs[feed.name] = ct
+
+		TODO: Start feeds by API key. Where each CronTab corresponds to a FeedGroup.
+		"""
+		for key in APIKey.query.all():
+			if not key.active:
+				self.log('API key "%s" marked inactive. Skipped.' % (key.name))
+				continue
+			self.log("%s: Processing feed groups." % key.name)
+			for fg in key.feedgroups:
+				if not fg.active:
+					self.log('%s: Feed group "%s" marked inactive. Skipped.' % \
+						(key.name, fg.name))
+					continue
+				self.log('%s: Starting feeds in group "%s"' % (key.name, fg.name))
+				for feed in fg.feeds:
+					if not feed.active:
+						self.log('%s:%s: Feed "%s" marked inactive. Skipped.' % \
+							(key.name, fg.name, feed.name))
+						continue
+					self.log('%s:%s: Scheduling "%s" [%s]' % \
+						(key.name, fg.name, feed.name, feed.schedule))
+					ct = self.create_crontab(feed)
+					g  = gevent.spawn(ct.run)
+					self.threads.append(g)
+					self.crontabs[feed.name] = ct
 
 	def run(self):
 		"""
@@ -57,6 +70,7 @@ class FeedManager(object):
 			for i in self.threads:
 				if i.started == False:
 					self.threads.remove(i)
+#			self.receive(self.inbox.get(block=False))
 		self.log("Cleaning up..")
 
 	def create_crontab(self, feed):
@@ -98,23 +112,23 @@ class FeedManager(object):
 		for i,v in enumerate(self.threads):
 			self.log("%s %s" % (i,v))
 
-	def receive(self, message):
-		if type(message) == dict: self.server.put(message)
-		else:
-			if message == "ping": return
-			(cmd,args) = message.split(' ',1)
-			cmd=cmd.lower()
-			if cmd == 'rescan':
-				if len(args.split()) > 1: (id,username) = args.split()
-				else: return
-				self.log('rescan event initiated by %s.' % username)
-				try:
-					self.rescan()
-					response = {'success':'RESCAN successfully completed. %s' % id}
-					self.server.put(response)
-				except Exception, err:
-					response = {'error':'RESCAN failed: %s. %s' % (err,id)}
-					self.server.put(response)
+	def receive(self, payload):
+		"""
+		"""
+		self.log(payload)
+		if len(payload) < 3 or type(payload) != list: return
+		response_queue, command, args = payload.split()
+		func = getattr(self, "handle_" + command, None)
+		if func:
+			response_queue.put(func(args))
+
+	def handle_check(self, feed):
+		"""
+		 Return whether we have a feed running or not.
+		"""
+		if feed.name in self.crontabs:
+			return True
+		return False
 
 	def __setitem__(self, name, crontab):
 		if name in self.crontabs.keys():

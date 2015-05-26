@@ -7,6 +7,7 @@ Database layout for Emissary.
 import time
 from uuid import uuid4
 from emissary import db, app
+from multiprocessing import Queue
 from emissary.controllers.utils import uid
 # 
 #       /--Subprocesses for checking feed timing data
@@ -88,8 +89,20 @@ class Feed(db.Model):
 		return "<Feed>"
 
 	def is_running(self):
+		"""
+		 Place a status request in the FeedManager inbox.
+		 The request should include a Queue with which to reply through.
+		 If no reply is received in 2 seconds then the status is None.
+		"""
 		if app.feedmanager:
-			pass
+			response_queue = Queue()
+			app.feedmanager.put([response_queue, "check", self])
+			then = int(time.time())
+			while response_queue.empty():
+				now = int(time.time())
+				if (now - then) >= 2:
+					return None
+			return response_queue.get()
 		return False
 
 	def jsonify(self, articles=False):

@@ -87,6 +87,8 @@ if __name__ == "__main__":
 	log = Log("Emissary", log_file=options.logfile, log_stdout=options.debug)
 	app.log = log
 
+	log("Starting Emissary %s." % app.version)
+
 	if options.stop:
 		pid = None
 		try:
@@ -158,6 +160,7 @@ if __name__ == "__main__":
 	# communication channels.
 	fm = FeedManager(log)
 	fm.load_feeds()
+	fm.db           = db
 	fm.server       = app.inbox
 	app.feedmanager = fm.inbox
 
