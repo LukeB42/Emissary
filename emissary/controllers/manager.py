@@ -17,7 +17,7 @@ class FeedManager(object):
 	"""Keeps CronTab objects in rotation"""
 	def __init__(self, log):
 		self.log         = log
-		self.inbox       = Queue()
+		self.app         = None
 		self.running     = False
 		self.crontabs    = {}
 		self.threads     = []
@@ -70,7 +70,12 @@ class FeedManager(object):
 			for i in self.threads:
 				if i.started == False:
 					self.threads.remove(i)
-#			self.receive(self.inbox.get(block=False))
+			try:
+				self.receive(
+					self.app.inbox.get(block=False)
+				)
+			except:
+				pass
 		self.log("Cleaning up..")
 
 	def create_crontab(self, feed):
@@ -80,7 +85,6 @@ class FeedManager(object):
 		ct       = cron.CronTab(evt)
 		ct.name  = feed.name
 		ct.inbox = Queue()
-		ct.fm    = self.inbox
 		return ct
 
 	def revive(self, ct):
@@ -115,12 +119,17 @@ class FeedManager(object):
 	def receive(self, payload):
 		"""
 		"""
-		self.log(payload)
 		if len(payload) < 3 or type(payload) != list: return
-		response_queue, command, args = payload.split()
+		qid, command, args = payload
 		func = getattr(self, "handle_" + command, None)
 		if func:
-			response_queue.put(func(args))
+			for rq in self.app.queues:
+				if hex(id(rq)) == qid:
+					# Put our response on the queue and rotate its priority.
+					rq.put(func(args))
+					rq.access = time.time()
+					return
+			self.log("Couldn't find response queue at %s." % id)
 
 	def handle_check(self, feed):
 		"""
@@ -170,7 +179,6 @@ class FeedManager(object):
 				ct 			 	= Cron.CronTab(e)
 				ct.name			= feed['name']
 				ct.inbox		= Queue()
-				ct.fm			= self.inbox
 				self[f['uid']]	= ct
 		for f in self.crontabs.keys():
 			if f not in stored_feeds:

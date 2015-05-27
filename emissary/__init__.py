@@ -1,8 +1,9 @@
 # _*_ coding: utf-8 _*_
+import time
 from flask import Flask
 from flask.ext import restful
 from pkgutil import extend_path
-from multiprocessing import Queue
+from multiprocessing import Queue, cpu_count
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.engine.reflection import Inspector
 
@@ -19,6 +20,14 @@ app.version = "1.3"
 app.inbox = Queue()
 app.feedmanager = None
 app.config["HTTP_BASIC_AUTH_REALM"] = "Emissary " + app.version
+
+# These are response queues that enable the main thread of execution to
+# share data with the REST interface. Mainly for reporting the status of crontabs.
+app.queues = []
+for i in range(cpu_count() * 2):
+	q = Queue()
+	q.access = time.time()
+	app.queues.append(q)
 
 db = SQLAlchemy(app)
 api = restful.Api(app, prefix='/v1')

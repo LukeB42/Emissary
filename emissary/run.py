@@ -161,8 +161,8 @@ if __name__ == "__main__":
 	fm = FeedManager(log)
 	fm.load_feeds()
 	fm.db           = db
-	fm.server       = app.inbox
-	app.feedmanager = fm.inbox
+	fm.app          = app # Queue access
+#	app.feedmanager = fm.inbox
 
 	# Start the REST interface
 	httpd = WSGIServer(sock, app, certfile=options.cert, keyfile=options.key)
