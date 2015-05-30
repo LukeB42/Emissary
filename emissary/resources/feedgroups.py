@@ -1,4 +1,5 @@
-# This file provides the HTTP endpoints for operating on feed groups
+# _*_ coding: utf-8 _*_
+# This file provides the /v1/feedgroups endpoint
 from emissary import db
 from flask import request
 from flask.ext import restful

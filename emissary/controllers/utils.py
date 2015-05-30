@@ -130,3 +130,17 @@ def tconv(seconds):
                 s+= "%i seconds" % (seconds)
     return s
 
+def spaceparse(string):
+    "Return strings surrounded in quotes"
+    result = []
+    if string.count('"') % 2:
+        return result
+    s = string.split()
+    start = None
+    stop = None
+    for i,w in enumerate(s):
+        if w.startswith('"'):
+            start = i
+        if w.endswith('"'):
+            result.append(' '.join(s[start:i+1]).strip('"'))
+    return result

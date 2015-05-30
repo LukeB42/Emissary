@@ -124,8 +124,14 @@ class repl(cmd.Cmd):
 		self.prompt = self.formatted_prompt()
 		return stop
 
+	def emptyline(self):
+		pass
+
 	def postloop(self):
 		print
+
+	def do_search(self, line):
+		self.do_get("articles/search/" + line)
 
 	def do_style(self, style):
 		if not self.highlight:

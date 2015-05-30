@@ -43,8 +43,7 @@ class ArticleCollection(restful.Resource):
 	@gzipped
 	def put(self):
 		"""
-		 Create a new feed providing the name and url are unique.
-		 Feeds must be associated with a group.
+		 Fetch an article without an associated feed.
 		"""
 		key = auth()
 
@@ -57,10 +56,29 @@ class ArticleCollection(restful.Resource):
 	@gzipped
 	def delete(self):
 		"""
-		 Halt and delete a feed.
-		 Default to deleting its articles.
+		 Delete an article.
 		"""
 		return {}
+
+class ArticleSearch(restful.Resource):
+
+	def get(self, term):
+		"""
+		 Return the amount of articles belonging to an API key.
+		"""
+		key = auth()
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("content",type=bool, help="", required=False, default=None)
+		args = parser.parse_args()
+
+		return [a.jsonify() for a in Article.query.filter(
+			and_(Article.key == key,Article.title.like("%" + term + "%"))
+		).all()]
+
+
+		return len(key.articles)
 
 class ArticleResource(restful.Resource):
 
