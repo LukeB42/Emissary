@@ -35,6 +35,11 @@ class APIKey(db.Model):
 	def generate_key_str(self):
 		return str(uuid4())
 
+	def __repr__(self):
+		if not self.name:
+			return "<APIKey>"
+		return '<APIKey "%s">' % self.name
+
 	def jsonify(self, feedgroups=False, with_key_str=False):
 		response = {}
 		response['name']       = self.name

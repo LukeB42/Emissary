@@ -1,5 +1,4 @@
-# This file provides the HTTP endpoints for creating, modifying and reviewing
-# feed groups.
+# This file provides the HTTP endpoints for operating on feed groups
 from emissary import db
 from flask import request
 from flask.ext import restful

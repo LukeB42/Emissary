@@ -20,9 +20,10 @@ except ImportError: highlight = False
 
 class repl(cmd.Cmd):
 
-	prompt = "> "		
+	prompt = "> "
 	intro = "Emissary %s\nPsybernetics %i\n" % (app.version, time.gmtime()[0])
 	ruler = '-'
+
 
 	def parse_args(self, args):
 		body = {}
@@ -33,6 +34,9 @@ class repl(cmd.Cmd):
 				body[x[0]] = x[1]
 			except: continue
 		return body
+
+	def formatted_prompt(self):
+		return "(%i)> " % self.c.get("articles/count")[0]
 
 	def do_setkey(self,key):
 		if key:
@@ -53,6 +57,7 @@ class repl(cmd.Cmd):
 		self.display(response)
 
 	def do_put(self,line):
+		"Create a new feed or feed group."
 		line, body = line.split(' ',1)
 		body = self.parse_args(body)
 		response = self.c._send_request(line, 'PUT', body)
@@ -115,6 +120,10 @@ class repl(cmd.Cmd):
 		print "^D",
 		return True
 
+	def postcmd(self, stop, line):
+		self.prompt = self.formatted_prompt()
+		return stop
+
 	def postloop(self):
 		print
 
@@ -142,6 +151,7 @@ def reqwrap(func):
 		except: return ({'error':'Connection refused.'}, 000)
 	return wrapper
 
+
 if __name__ == "__main__":
 	parser = optparse.OptionParser(prog="python -m emissary.repl")
 	parser.add_option("--host", dest="host", action="store", default='localhost:6362/v1/')
@@ -155,6 +165,7 @@ if __name__ == "__main__":
 	if k: r.c.key = k.key
 	r.c.verify_https = False
 	r.highlight = highlight
+	r.prompt = r.formatted_prompt()
 	if highlight:
 		r.AVAILABLE_STYLES = set(STYLE_MAP.keys())
 		if 'tango' in r.AVAILABLE_STYLES: r.style = 'tango'
@@ -162,6 +173,14 @@ if __name__ == "__main__":
 			for s in r.AVAILABLE_STYLES: break
 			r.style = s
 	r.c._send_request = reqwrap(r.c._send_request)
+#	try:
+#		article_count = r.c.get("articles/count")[0]
+#		if article_count:
+#			r.intro = "Emissary %s. %i articles.\nPsybernetics %i\n" % \
+#				(app.version, article_count, time.gmtime()[0])
+#	except:
+#		pass
+
 	try:
 		r.cmdloop()
 	except KeyboardInterrupt:

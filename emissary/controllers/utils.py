@@ -10,7 +10,6 @@ import functools
 from emissary import app
 from sqlalchemy import or_, and_
 from cStringIO import StringIO as IO
-from microauth.resources.models import *
 from flask import after_this_request, request
 
 def get(key, cls, attrs=(), page=0, per_page=50, local=True):
