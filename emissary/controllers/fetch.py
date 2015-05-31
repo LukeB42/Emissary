@@ -19,14 +19,14 @@ def get(url):
 def fetch_feed(feed, log):
 
 	if feed.group:
-		log("%s:%s: Fetching %s." % \
+		log("%s: %s: Fetching %s." % \
 			(feed.key.name, feed.group.name, feed.name))
 	else:
 		log("%s: Fetching %s." % (feed.key.name, feed.name))
 	try:
 		r = get(feed.url)
 	except Exception, e:
-		log("%s:%s: Error fetching %s: %s" % \
+		log("%s: %s: Error fetching %s: %s" % \
 			(feed.key.name, feed.group.name, feed.name, e.message[0]))
 		return
 
@@ -52,10 +52,10 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	# Skip this url if we've already extracted and stored it for this feed, unless we're overwriting.
 	if Article.query.filter(and_(Article.url == url), Article.feed == feed).first():
 		if overwrite:
-			log("%s:%s/%s: Preparing to overwrite existing copy of %s" % \
+			log("%s: %s/%s: Preparing to overwrite existing copy of %s" % \
 				(feed.key.name, feed.group.name,feed.name,url), "debug")
 		else:
-			log("%s:%s/%s: Already storing %s" % (feed.key.name, feed.group.name,feed.name,url), "debug")
+			log("%s: %s/%s: Already storing %s" % (feed.key.name, feed.group.name,feed.name,url), "debug")
 			return
 
 	# Store our awareness of this url during this run in a globally available dictionary,
@@ -78,7 +78,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	try:
 		document = get(url)
 	except Exception, e:
-		log("%s:%s/%s: Error fetching %s: %s" % \
+		log("%s: %s/%s: Error fetching %s: %s" % \
 			(feed.key.name, feed.group.name,feed.name,url,e.message[0]))
 		return
 
@@ -90,7 +90,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 				title=title,
 			)
 			commit_to_feed(feed, article)
-			log("%s:%s/%s: Storing %s, reference to %s (%s)" % \
+			log("%s: %s/%s: Storing %s, reference to %s (%s)" % \
 				(feed.key.name, feed.group.name, feed.name, article.uid, url, document.headers['content-type']))
 			return
 
@@ -102,7 +102,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		article_text = parser.extract_body(document.text)
 		summary      = parser.summarise(article_text)
 	except Exception, e:
-		log("%s:%s: Error parsing %s: %s" % (feed.key.name, feed.group.name, url, e.message))
+		log("%s: %s: Error parsing %s: %s" % (feed.key.name, feed.group.name, url, e.message))
 		return
 
 	article = Article(
@@ -115,7 +115,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	commit_to_feed(feed, article)
 	now = int(time.time())
 	duration = tconv(now-then)
-	log('%s:%s/%s: Stored %s "%s" (%s)' % \
+	log('%s: %s/%s: Stored %s "%s" (%s)' % \
 		(feed.key.name, feed.group.name, feed.name, article.uid, article.title, duration))
 
 def fetch_article(key):

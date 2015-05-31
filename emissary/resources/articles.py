@@ -70,15 +70,51 @@ class ArticleSearch(restful.Resource):
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("per_page",type=int, help="", required=False, default=10)
 		parser.add_argument("content",type=bool, help="", required=False, default=None)
 		args = parser.parse_args()
+
+		if args.content == True:
+			response = [a.jsonify() for a in \
+					Article.query.filter(
+						and_(
+							Article.key == key,
+							Article.content != None,
+							Article.title.like("%" + term + "%")
+						))
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+			]
+
+			# This method of manually pruning JSON documents because they
+			# don't relate to items that have content can omit them from search
+			# completely. They don't have content but they're showing up here in
+			# content != None rather than content == None.. You could always just
+			# return the list comprehension defined above.
+			for doc in response:
+				if not doc['content_available']:
+					response.remove(doc)
+			return response
+
+		elif args.content == False:
+			return [a.jsonify() for a in \
+					Article.query.filter(
+						and_(
+							Article.key == key,
+							Article.content == None,
+							Article.title.like("%" + term + "%")
+						))
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+			]
+
+		return [a.jsonify() for a in \
+				Article.query.filter(
+					and_(Article.key == key, Article.title.like("%" + term + "%")))
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+		]
 
 		return [a.jsonify() for a in Article.query.filter(
 			and_(Article.key == key,Article.title.like("%" + term + "%"))
 		).all()]
-
-
-		return len(key.articles)
 
 class ArticleResource(restful.Resource):
 

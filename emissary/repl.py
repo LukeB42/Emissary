@@ -36,7 +36,10 @@ class repl(cmd.Cmd):
 		return body
 
 	def formatted_prompt(self):
-		return "(%i)> " % self.c.get("articles/count")[0]
+		try:
+			return "(%i)> " % self.c.get("articles/count")[0]
+		except:
+			return "no connection> "
 
 	def do_setkey(self,key):
 		if key:

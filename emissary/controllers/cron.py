@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # From http://stackoverflow.com/questions/373335/suggestions-for-a-cron-like-scheduler-in-python
-import gevent, gevent.monkey
-gevent.monkey.patch_all()
-from datetime import datetime, timedelta
+import gevent
 import time, sys
+from datetime import datetime, timedelta
 
 class CronError(Exception):
 	def __init__(self, message):
@@ -186,6 +185,7 @@ class CronTab(gevent.Greenlet):
         t=datetime(*datetime.now().timetuple()[:5])
         while 1:
             for e in self.events:
+#                print zip([i for i in dir(self)], [getattr(self,i) for i in dir(self)])
                 if self.inbox:			   # This .get() blocks, preventing duplicate greenlets running
                     msg = self.inbox.get() # in the same addr due to our use of multiprocessing.Process
                 e.check(t)

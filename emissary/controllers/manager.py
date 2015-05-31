@@ -1,5 +1,3 @@
-import gevent.monkey
-gevent.monkey.patch_all()
 from gevent.queue import Queue
 import sys, os, time, pwd, optparse, gevent
 
@@ -42,13 +40,13 @@ class FeedManager(object):
 					self.log('%s: Feed group "%s" marked inactive. Skipped.' % \
 						(key.name, fg.name))
 					continue
-				self.log('%s: Starting feeds in group "%s"' % (key.name, fg.name))
+#				self.log('%s: Starting feeds in group "%s"' % (key.name, fg.name))
 				for feed in fg.feeds:
 					if not feed.active:
 						self.log('%s:%s: Feed "%s" marked inactive. Skipped.' % \
 							(key.name, fg.name, feed.name))
 						continue
-					self.log('%s:%s: Scheduling "%s" [%s]' % \
+					self.log('%s: %s: Scheduling "%s" (%s)' % \
 						(key.name, fg.name, feed.name, feed.schedule))
 					ct = self.create_crontab(feed)
 					g  = gevent.spawn(ct.run)
@@ -58,7 +56,21 @@ class FeedManager(object):
 	def run(self):
 		"""
 		 Receive inbox messages and revive feeds.
-		 Also block crontab from executing every second.
+		 Also block duplicate crontab execution.....
+
+		 The reason we do this is due to a quirk of
+		 using Gevent with multiprocessing.Process.
+
+		 It's why obtaining the article count in the REPL prompt
+		 takes a second, but the tradeoff is that Emissary won't
+		 overutilise your CPU in this loop.
+
+		 If you run a greenlet in a subprocess we end up with
+		 fetch greenlets executing twice but in the same address space...
+		 So I've settled on this solution from now after investigating GIPC,
+		 which works with Flask's built in httpd, but that's not as nimble
+		 as gevent.WSGIServer.
+
 		"""
 		self.running = True
 		while self.running:
@@ -66,16 +78,22 @@ class FeedManager(object):
 			for ct in self.crontabs.values():
 				if ct.inbox.empty():
 					ct.inbox.put("ping")
+				# Check if revive needed
+
 				self.revive(ct)
 			for i in self.threads:
 				if i.started == False:
 					self.threads.remove(i)
 			try:
-				self.receive(
-					self.app.inbox.get(block=False)
-				)
+				# Deal with incoming requests from the REST API:
+				self.receive(self.app.inbox.get(block=False))
 			except:
 				pass
+			# Sleep for two seconds.
+			# Execute greenlets in between.
+			time.sleep(1)
+			gevent.sleep()
+			time.sleep(1)
 		self.log("Cleaning up..")
 
 	def create_crontab(self, feed):
