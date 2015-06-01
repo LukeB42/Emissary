@@ -9,6 +9,6 @@ else:
 	)
 
 MASTER_KEY = None
-MASTER_KEY_NAME = "Master"
+MASTER_KEY_NAME = "Primary"
 PERMIT_NEW = True
 GZIP_HERE = True

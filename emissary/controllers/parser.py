@@ -106,3 +106,4 @@ def summarise(article):
 			else:
 				c += 1
 	return ' '.join(article.split()[:stopnum])
+

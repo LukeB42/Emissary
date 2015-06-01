@@ -7,10 +7,11 @@ import time
 import base64
 import datetime
 import functools 
-from emissary import app
+from emissary import app, db
 from sqlalchemy import or_, and_
 from cStringIO import StringIO as IO
 from flask import after_this_request, request
+from emissary.controllers.cron import parse_timings
 
 def get(key, cls, attrs=(), page=0, per_page=50, local=True):
 #
@@ -144,3 +145,4 @@ def spaceparse(string):
         if w.endswith('"'):
             result.append(' '.join(s[start:i+1]).strip('"'))
     return result
+

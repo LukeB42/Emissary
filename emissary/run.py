@@ -2,10 +2,10 @@
 # _*_ coding: utf-8 _*_
 
 import gevent
+from gevent.queue import Queue
 from gevent.socket import socket
 from gevent.wsgi import WSGIServer
 from gevent import monkey; monkey.patch_all()
-from gevent.queue import Queue
 
 import os
 import sys
@@ -14,7 +14,7 @@ import time
 import _socket
 import optparse
 from multiprocessing import Process
-
+from gipc import start_process
 
 from emissary import app, init, db
 from emissary.controllers.log import Log
@@ -84,7 +84,7 @@ if __name__ == "__main__":
 	app.debug = options.debug
 
 	# Build logger from config
-	log = Log("Emissary", log_file=options.logfile, log_stdout=options.debug)
+	log = Log("Emissary", log_file=options.logfile, log_stdout= not options.daemonise)
 	app.log = log
 
 	log("Starting Emissary %s." % app.version)
@@ -162,13 +162,14 @@ if __name__ == "__main__":
 	fm.load_feeds()
 	fm.db           = db
 	fm.app          = app # Queue access
-#	app.feedmanager = fm.inbox
 
 	# Start the REST interface
 	httpd = WSGIServer(sock, app, certfile=options.cert, keyfile=options.key)
 	httpd_process = Process(target=httpd.serve_forever)
 	log("Binding to %s:%s" % (options.address, options.port))
 	httpd_process.start()
+#	d = start_process(app.run, sock)
+#	d = start_process(httpd.serve_forever)
 
 	if options.daemonise:
 		f = file(options.pidfile, 'a')
@@ -180,3 +181,4 @@ if __name__ == "__main__":
 	except KeyboardInterrupt:
 		log("Stopping...")
 		httpd_process.terminate()
+#		d.terminate()
