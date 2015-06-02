@@ -1,3 +1,6 @@
+# This file contains functions designed for
+# loading cron tables and storing new feeds.
+
 from emissary import db
 from sqlalchemy import and_
 from emissary.controllers.utils import spaceparse
@@ -8,7 +11,7 @@ def create_feed(log, db, key, group, feed):
 	"""
 	Takes a key object, a group name and a dictionary
 	describing a feed ({name:,url:,schedule:,active:})
-	and reliably attaches a new created feed to the key
+	and reliably attaches a newly created feed to the key
 	and group.
 	"""
 	if not type(feed) == dict:

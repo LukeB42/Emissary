@@ -54,6 +54,7 @@ def init():
 	api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
 	api.add_resource(feeds.FeedCollection,           "/feeds")
 	api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
+	api.add_resource(feeds.FeedArticleCollection,    "/feeds/<string:name>/articles")
 	api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
 	api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
 	api.add_resource(articles.ArticleCollection,     "/articles")

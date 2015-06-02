@@ -9,6 +9,12 @@ from emissary.controllers import parser
 from emissary.controllers.utils import uid, tconv
 requests.packages.urllib3.disable_warnings()
 
+
+# This is a little globally-available (as far as coroutines calling this are concerned)
+# dictionary of urls we've already visited. It permits us to only try a url
+# four times every half an hour. If we see it again after half an hour we'll
+# try it again, otherwise it stays in the seen dictionary. It also needs periodically
+# emptying, lest it grow infinitely.
 seen = {}
 
 def get(url):
@@ -90,7 +96,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 				title=title,
 			)
 			commit_to_feed(feed, article)
-			log("%s: %s/%s: Storing %s, reference to %s (%s)" % \
+			log("%s: %s/%s: Stored %s, reference to %s (%s)" % \
 				(feed.key.name, feed.group.name, feed.name, article.uid, url, document.headers['content-type']))
 			return
 

@@ -2,7 +2,8 @@
 from emissary import db
 from flask import request
 from flask.ext import restful
-from emissary.models import Feed
+from sqlalchemy import desc, and_
+from emissary.models import Feed, Article
 from emissary.resources.api_key import auth
 from emissary.controllers.utils import gzipped
 from emissary.controllers.cron import CronError, parse_timings
@@ -93,7 +94,44 @@ class FeedResource(restful.Resource):
 		 Review a feed.
 		"""
 		key = auth()
-		feed = [feed for feed in key.feeds if feed.name == name]
+
+		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
 		if feed:
-			return feed[0].jsonify()
+			return feed.jsonify()
 		restful.abort(404)
+
+class FeedArticleCollection(restful.Resource):
+
+	def get(self, name):
+		"""
+		 Review the articles for a specific feed on this key.
+		"""
+		key = auth()
+
+		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+		if not feed: abort(404)
+
+		per_page = 10
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("content",type=bool, help="", required=False, default=None)
+		args = parser.parse_args()
+
+		# Return a list of the JSONified Articles ordered by descending creation date and paginated.
+		if args.content == True:
+			return [a.jsonify() for a in \
+					Article.query.filter(and_(Article.key == key, Article.content != None, Article.feed == feed))
+					.order_by(desc(Article.created)).paginate(args.page, per_page).items
+			]
+		elif args.content == False:
+			return [a.jsonify() for a in \
+					Article.query.filter(and_(Article.key == key, Article.content == None, Article.feed == feed))
+					.order_by(desc(Article.created)).paginate(args.page, per_page).items
+			]
+
+		return [a.jsonify() for a in \
+				Article.query.filter(and_(Article.key == key, Article.feed == feed))
+				.order_by(desc(Article.created)).paginate(args.page, per_page).items
+		]
+
