@@ -1,9 +1,10 @@
+# _*_ coding: utf-8 _*_
 # This file provides the HTTP endpoints for operating on feeds
-from emissary import db
+from emissary import app, db
 from flask import request
 from flask.ext import restful
 from sqlalchemy import desc, and_
-from emissary.models import Feed, Article
+from emissary.models import Feed, FeedGroup, Article
 from emissary.resources.api_key import auth
 from emissary.controllers.utils import gzipped
 from emissary.controllers.cron import CronError, parse_timings
@@ -35,11 +36,10 @@ class FeedCollection(restful.Resource):
 		parser.add_argument("active",type=bool, default=True, help="Feed is active", required=False)
 		args = parser.parse_args()
 
-		fg = [fg for fg in key.feedgroups if fg.name == args.group]
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == args.group)).first()
+#		[fg for fg in key.feedgroups if fg.name == args.group]
 		if not fg:
 			return {"message":"Unknown Feed Group %s" % args.group}, 304
-		else:
-			fg=fg[0]
 
 		# Verify the schedule...
 		try:
@@ -59,10 +59,28 @@ class FeedCollection(restful.Resource):
 		db.session.add(fg)
 		db.session.add(key)
 		db.session.commit()
+
+		# Schedule this feed in Process-1. 0 here is a
+		# response queue ID (we're not waiting for a reply)
+		app.inbox.put([0, "start", feed])
 		return feed.jsonify(), 201
 
+class FeedResource(restful.Resource):
+
 	@gzipped
-	def post(self):
+	def get(self, name):
+		"""
+		 Review a feed.
+		"""
+		key = auth()
+
+		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+		if feed:
+			return feed.jsonify()
+		restful.abort(404)
+
+	@gzipped
+	def post(self, name):
 		"""
 		 Modify an existing feed.
 		"""
@@ -79,26 +97,20 @@ class FeedCollection(restful.Resource):
 		return {}
 
 	@gzipped
-	def delete(self):
+	def delete(self, name):
 		"""
 		 Halt and delete a feed.
 		 Default to deleting its articles.
 		"""
-		return {}
-
-class FeedResource(restful.Resource):
-
-	@gzipped
-	def get(self, name):
-		"""
-		 Review a feed.
-		"""
 		key = auth()
+		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
+		if not feed:
+			restful.abort(404)
+		app.inbox.put([0, "stop", feed])
+		db.session.delete(feed)
+		
 
-		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
-		if feed:
-			return feed.jsonify()
-		restful.abort(404)
+		return {}
 
 class FeedArticleCollection(restful.Resource):
 
@@ -135,3 +147,7 @@ class FeedArticleCollection(restful.Resource):
 				.order_by(desc(Article.created)).paginate(args.page, per_page).items
 		]
 
+class FeedArticleSearch(restful.Resource):
+
+	def get(self):
+		return {}

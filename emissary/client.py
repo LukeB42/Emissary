@@ -7,7 +7,7 @@ os.environ['no_proxy'] = '127.0.0.1,localhost'
 requests.packages.urllib3.disable_warnings()
 
 class Client(object):
-	def __init__(self, key, base_url, verify=True, timeout=2.000):
+	def __init__(self, key, base_url, verify=True, timeout=2.500):
 		self.key = key
 		self.base = base_url
 		pp = pprint.PrettyPrinter(indent=4)

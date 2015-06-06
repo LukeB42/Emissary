@@ -1,6 +1,10 @@
 Emissary
 ========
 
+For researchers, programmers and news junkies who want personally curated news archives.
+Emissary is a web content extractor that has a RESTful API.
+Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
+
 Cron for indexing HTTP resources.
 
 --------

@@ -1,7 +1,21 @@
+# This file implements routines for extracting links from response objects.
 import re
 import lxml
 import urlparse
 import feedparser
+# We have sought to disperse power, to set men and women free.
+# That really means: to help them to discover that they are free.
+# Everybody's free. The slave is free.
+# The ultimate weapon isn't this plague out in Vegas, or any new super H-bomb.
+# The ultimate weapon has always existed. Every man, every woman, and every child owns it.
+# It's the ability to say No and take the consequences.
+# 'Fear is failure.' 'The fear of death is the beginning of slavery.'
+# "Thou hast no right but to do thy will.'
+# The goose can break the bottle at any second.
+# Socrates took the hemlock to prove it. 
+# Jesus went to the cross to prove it.
+# It's in all history, all myth, all poetry.
+# It's right out in the open all the time."
 from goose import Goose
 
 def extract_links(response):

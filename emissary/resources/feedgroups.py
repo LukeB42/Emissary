@@ -1,7 +1,8 @@
 # _*_ coding: utf-8 _*_
 # This file provides the /v1/feedgroups endpoint
-from emissary import db
+from emissary import app, db
 from flask import request
+from sqlalchemy import and_
 from flask.ext import restful
 from emissary.models import FeedGroup
 from emissary.resources.api_key import auth
@@ -42,21 +43,6 @@ class FeedGroupCollection(restful.Resource):
 
 		return fg.jsonify(), 201
 
-	@gzipped
-	def post(self):
-		key = auth()
-
-		parser = restful.reqparse.RequestParser()
-		parser.add_argument("name",type=str, help="", required=True)
-		parser.add_argument("active",type=bool, default=True, help="Feed is active", required=False)
-		args = parser.parse_args()
-
-		return {}
-
-	@gzipped
-	def delete(self):
-		return {}
-
 class FeedGroupResource(restful.Resource):
 
 	@gzipped
@@ -69,3 +55,34 @@ class FeedGroupResource(restful.Resource):
 		if fg:
 			return fg[0].jsonify()
 		restful.abort(404)
+
+	@gzipped
+	def post(self, name):
+		key = auth()
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("name",type=str, help="Rename a feed group",)
+		parser.add_argument("active",type=bool, default=None, help="Stop/restart a group of feeds")
+		args = parser.parse_args()
+
+		return {}
+
+	@gzipped
+	def delete(self, name):
+		key = auth()
+		
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == name)).first()
+		if not fg:
+			restful.abort(404)
+		count=0
+		for feed in fg.feeds:
+			for article in feed.articles:
+				count += 1
+				db.session.delete(article)
+			db.session.delete(feed)
+		db.session.delete(fg)
+		db.session.commit()
+		count = "{:,}".format(count)
+		app.log('%s: Deleted feed group "%s". (%s articles)' % (key.name, fg.name, count))
+
+		return {}

@@ -9,7 +9,7 @@ from emissary import app
 from emissary.client import Client
 from emissary.models import APIKey
 from subprocess import Popen, PIPE
-from emissary.controllers.utils import tconv
+from emissary.controllers.utils import tconv, spaceparse
 
 try:
 	from pygments import highlight
@@ -24,20 +24,30 @@ class repl(cmd.Cmd):
 	intro = "Emissary %s\nPsybernetics %i\n" % (app.version, time.gmtime()[0])
 	ruler = '-'
 
-
 	def parse_args(self, args):
 		body = {}
+		parsed = spaceparse(args)
 		args = args.split()
 		for i in args:
 			try:
 				x=i.split('=')
-				body[x[0]] = x[1]
+				if type(parsed) == dict and not x[0] in parsed:
+					parsed[x[0]] = x[1]
+				else:
+					body[x[0]] = x[1]
 			except: continue
+		if type(parsed) == dict: body = parsed
 		return body
 
 	def formatted_prompt(self):
+		"""
+		 Here we format the first return value of /v1/articles/count
+		 into something that adds commas to triple digit (etc) values.
+		"""
 		try:
-			return "(%i)> " % self.c.get("articles/count")[0]
+			return "({:,}) > ".format(
+				self.c.get("articles/count")[0]
+			)
 		except:
 			return "no connection> "
 
@@ -61,16 +71,23 @@ class repl(cmd.Cmd):
 
 	def do_put(self,line):
 		"Create a new feed or feed group."
-		line, body = line.split(' ',1)
-		body = self.parse_args(body)
-		response = self.c._send_request(line, 'PUT', body)
-		self.display(response)
+		if not ' ' in line:
+			print "Need data to transmit."
+		else:
+			line, body = line.split(' ',1)
+			body = self.parse_args(body)
+			response = self.c._send_request(line, 'PUT', body)
+			self.display(response)
+
 
 	def do_post(self,line):
-		line, body = line.split(' ',1)
-		body = self.parse_args(body)
-		response = self.c._send_request(line, 'POST', body)
-		self.display(response)
+		if not ' ' in line:
+			print "Need data to transmit."
+		else:
+			line, body = line.split(' ',1)
+			body = self.parse_args(body)
+			response = self.c._send_request(line, 'POST', body)
+			self.display(response)
 
 	def do_exit(self,line):
 		raise SystemExit

@@ -1,5 +1,5 @@
 from gevent.queue import Queue
-import sys, os, time, pwd, optparse, gevent
+import sys, os, time, pwd, optparse, gevent, hashlib
 
 from emissary.models import Feed, FeedGroup, APIKey
 from emissary.controllers import cron
@@ -51,7 +51,7 @@ class FeedManager(object):
 					ct = self.create_crontab(feed)
 					g  = gevent.spawn(ct.run)
 					self.threads.append(g)
-					self.crontabs[feed.name] = ct
+					self.crontabs[ct.name] = ct
 
 	def run(self):
 		"""
@@ -89,11 +89,9 @@ class FeedManager(object):
 				self.receive(self.app.inbox.get(block=False))
 			except:
 				pass
-			# Sleep for two seconds.
-			# Execute greenlets in between.
-			time.sleep(1)
+			# the sleep for 50ms keeps cpu utilisation low
 			gevent.sleep()
-			time.sleep(1)
+			time.sleep(0.05)
 		self.log("Cleaning up..")
 
 	def create_crontab(self, feed):
@@ -101,9 +99,25 @@ class FeedManager(object):
 		evt      = cron.Event(fetch.fetch_feed,t[0], t[1], t[2], t[3], t[4], [feed, self.log])
 		evt.feed = feed
 		ct       = cron.CronTab(evt)
-		ct.name  = feed.name
+		ct.name  = self.generate_ct_name(feed)
 		ct.inbox = Queue()
 		return ct
+
+	def generate_ct_name(self, feed):
+		"""Generate a crontab name from a feed object"""
+		return hashlib.sha1(
+			feed.name + str(
+				time.mktime(
+					feed.created.timetuple()
+				)
+			)
+		).hexdigest()
+		name = feed.name
+		if feed.group:
+			name = feed.group.name + name
+		if feed.key:
+			name = feed.key.key + name
+		return hashlib.sha1(name).hexdigest()
 
 	def revive(self, ct):
 		"""
@@ -136,26 +150,60 @@ class FeedManager(object):
 
 	def receive(self, payload):
 		"""
+		The Feed manager is an actor with an inbox that responds to commands
+		issued by the HTTPD process. We accept a list containing a queue ID
+		a command name that corresponds to FeedManager.handle_<command> and
+		arguments, even if it's just a None.
 		"""
 		if len(payload) < 3 or type(payload) != list: return
 		qid, command, args = payload
 		func = getattr(self, "handle_" + command, None)
-		if func:
-			for rq in self.app.queues:
-				if hex(id(rq)) == qid:
-					# Put our response on the queue and rotate its priority.
-					rq.put(func(args))
-					rq.access = time.time()
-					return
-			self.log("Couldn't find response queue at %s." % id)
+		if func and not qid: return(func(args))
+		elif func:
+			# We do a double comparison here in order to sort the queue out of the loop
+			q = [q for q in self.app.queues if hex(id(q)) == qid]
+			if not q:
+				self.log("Couldn't find response queue at %s." % id)
+				return
+			q=q[0]
+			# Put our response on the queue and rotate its priority.
+			q.put(func(args))
+			q.access = time.time()
+			self.app.queues.sort(key=lambda q: q.access, reverse=True)
+			return
+		return
 
 	def handle_check(self, feed):
 		"""
 		 Return whether we have a feed running or not.
 		"""
-		if feed.name in self.crontabs:
+		if self.generate_ct_name(feed) in self.crontabs:
 			return True
 		return False
+
+
+	def handle_start(self, feed):
+		"""
+		 Schedule a feed.
+		"""
+		print "starting..."
+		print feed
+		ct = self.create_crontab(feed)
+		name = self.generate_crontab_name(ct)
+		self.crontabs[name] = ct
+		return True
+
+	def handle_stop(self, feed):
+		"""
+		 Halt a feed.
+		"""
+		print feed
+		name = self.generate_ct_name(feed)
+		ct = self.crontabs[name]
+		ct.kill()
+		print ct
+		del self.crontabs[name]
+		return True
 
 	def __setitem__(self, name, crontab):
 		if name in self.crontabs.keys():

@@ -90,7 +90,7 @@ def uid():
 	millis = int(round(time.time() * 1000))
 	dt = datetime.datetime.now()
 	millis = str(millis)+str(dt.microsecond)
-	return str(base64.b64encode(millis)).strip('==')[-7:] # Adjust slicing to suit
+	return str(base64.b64encode(millis)).strip('==')[-10:] # Adjust slicing to suit
 
 def tconv(seconds):
     minutes, seconds = divmod(seconds, 60)
@@ -132,17 +132,42 @@ def tconv(seconds):
     return s
 
 def spaceparse(string):
-    "Return strings surrounded in quotes"
-    result = []
-    if string.count('"') % 2:
-        return result
-    s = string.split()
-    start = None
-    stop = None
-    for i,w in enumerate(s):
-        if w.startswith('"'):
-            start = i
-        if w.endswith('"'):
-            result.append(' '.join(s[start:i+1]).strip('"'))
-    return result
+	"""
+	Return strings surrounded in quotes as a list, or dict if they're key="value".
+	"""
+	results = []
+	quotes = string.count('"')
+	quoted = quotes / 2
+	keyvalue = False
 
+	# Return an empty resultset if there are an uneven number of quotation marks
+	if quotes % 2 != 0:
+		return results
+
+	# for every quoted phrase determine if it's an assignment and include the variable name
+	# disregard it from the string we're working with and continue onto the next quoted part
+	for phrase in range(0,quoted+1):
+		if not string: break
+		start = string.find('"')
+		end = string.find('"', start+1)
+
+		if start > 0 and string[start-1] == '=':
+			keyvalue = True
+			for i in range(start,-1,-1):
+				if string[i] == ' ' or i == 0:
+					results.append(string[i:end])
+					break
+		else:
+			results.append(string[start+1:end])
+		string = string[end+1:]
+	if keyvalue:
+		res = {}
+		for item in results:
+			k,v = item.split('=')
+			if k.startswith(' '):
+				k=k[1:]
+			if v.startswith('"'):
+				v=v[1:]
+			res[k]=v
+		return res
+	return results
