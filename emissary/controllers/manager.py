@@ -34,24 +34,29 @@ class FeedManager(object):
 			if not key.active:
 				self.log('API key "%s" marked inactive. Skipped.' % (key.name))
 				continue
+
 			self.log("%s: Processing feed groups." % key.name)
 			for fg in key.feedgroups:
+
 				if not fg.active:
 					self.log('%s: Feed group "%s" marked inactive. Skipped.' % \
 						(key.name, fg.name))
 					continue
-#				self.log('%s: Starting feeds in group "%s"' % (key.name, fg.name))
+
 				for feed in fg.feeds:
 					if not feed.active:
 						self.log('%s:%s: Feed "%s" marked inactive. Skipped.' % \
 							(key.name, fg.name, feed.name))
 						continue
+
 					self.log('%s: %s: Scheduling "%s" (%s)' % \
 						(key.name, fg.name, feed.name, feed.schedule))
+
 					ct = self.create_crontab(feed)
 					g  = gevent.spawn(ct.run)
 					self.threads.append(g)
-					self.crontabs[ct.name] = ct
+					name = self.generate_ct_name(feed)
+					self.crontabs[name] = ct
 
 	def run(self):
 		"""
@@ -66,29 +71,26 @@ class FeedManager(object):
 		 overutilise your CPU in this loop.
 
 		 If you run a greenlet in a subprocess we end up with
-		 fetch greenlets executing twice but in the same address space...
-		 So I've settled on this solution from now after investigating GIPC,
+		 CronTab greenlets executing twice but in the same address space...
+		 So I've settled on this solution for now after investigating GIPC,
 		 which works with Flask's built in httpd, but that's not as nimble
 		 as gevent.WSGIServer.
-
 		"""
+		self.load_feeds()
 		self.running = True
 		while self.running:
+			while not self.app.inbox.empty():
+				self.receive(self.app.inbox.get(block=False))
+			# Run feeds
 			gevent.sleep()
 			for ct in self.crontabs.values():
 				if ct.inbox.empty():
 					ct.inbox.put("ping")
 				# Check if revive needed
-
 				self.revive(ct)
 			for i in self.threads:
 				if i.started == False:
 					self.threads.remove(i)
-			try:
-				# Deal with incoming requests from the REST API:
-				self.receive(self.app.inbox.get(block=False))
-			except:
-				pass
 			# the sleep for 50ms keeps cpu utilisation low
 			gevent.sleep()
 			time.sleep(0.05)
@@ -96,7 +98,10 @@ class FeedManager(object):
 
 	def create_crontab(self, feed):
 		t        = cron.parse_timings(feed.schedule.split())
-		evt      = cron.Event(fetch.fetch_feed,t[0], t[1], t[2], t[3], t[4], [feed, self.log])
+		evt      = cron.Event(                   # One possible design for these crontabs
+					fetch.fetch_feed,            # is to have them correspond to a FeedGroup
+					t[0], t[1], t[2], t[3], t[4],# where each event is a member feed
+					[feed, self.log])            # and stopping the crontab stops the group.
 		evt.feed = feed
 		ct       = cron.CronTab(evt)
 		ct.name  = self.generate_ct_name(feed)
@@ -104,20 +109,14 @@ class FeedManager(object):
 		return ct
 
 	def generate_ct_name(self, feed):
-		"""Generate a crontab name from a feed object"""
-		return hashlib.sha1(
-			feed.name + str(
-				time.mktime(
-					feed.created.timetuple()
-				)
-			)
-		).hexdigest()
-		name = feed.name
-		if feed.group:
-			name = feed.group.name + name
-		if feed.key:
-			name = feed.key.key + name
-		return hashlib.sha1(name).hexdigest()
+		"""
+		 Generate a crontab name from a feed object that's
+		 hopefully unique between multiple feeds in multiple groups
+		 on multiple API keys.
+
+		 Determining the feed.key.key string here proved to be too expensive.
+		"""
+		return hashlib.sha1("%s %s" % (feed.name, feed.created)).hexdigest()
 
 	def revive(self, ct):
 		"""
@@ -139,14 +138,13 @@ class FeedManager(object):
 			feed         = ct.events[0].feed
 			ct = self.create_crontab(feed)
 			self[feed.name] = ct
-			if feed.name in self.crontabs.keys():
-				self.log("Restarting %s" % ct.name, "warning")
-			self.crontabs[ct.name] = ct
-			self.log(self.crontabs)
-
-	def __call__(self):
-		for i,v in enumerate(self.threads):
-			self.log("%s %s" % (i,v))
+			gevent.spawn(ct.run)
+#			if feed.name in self.crontabs.keys():
+#				self.log("Restarting %s" % ct.name, "warning")
+			
+#			name = self.generate_ct_name(feed)
+#			self.crontabs[name] = ct
+#			self.log(self.crontabs)
 
 	def receive(self, payload):
 		"""
@@ -177,10 +175,10 @@ class FeedManager(object):
 		"""
 		 Return whether we have a feed running or not.
 		"""
-		if self.generate_ct_name(feed) in self.crontabs:
+		name = self.generate_ct_name(feed)
+		if name in self.crontabs and self.crontabs[name].started:
 			return True
 		return False
-
 
 	def handle_start(self, feed):
 		"""

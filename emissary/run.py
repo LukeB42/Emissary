@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8 _*_
 
+# The reason we don't patch threading is because
+# our IPC queues rely on it for locking. We can't have them
+# be greenlets otherwise they will need the HTTPD to yeild
+# before data from the fetch process can be transmitted.
+from gevent import monkey; monkey.patch_all(thread=False)
 import gevent
 from gevent.queue import Queue
 from gevent.socket import socket
 from gevent.wsgi import WSGIServer
-from gevent import monkey; monkey.patch_all()
 
 import os
 import sys
@@ -14,11 +18,13 @@ import time
 import _socket
 import optparse
 from multiprocessing import Process
-from gipc import start_process
+#from gipc import start_process
+from gipc.gipc import _child
 
 from emissary import app, init, db
 from emissary.controllers.log import Log
 from emissary.controllers.manager import FeedManager
+from emissary.controllers.load import parse_crontab
 
 try:
 	import setproctitle
@@ -64,7 +70,8 @@ if __name__ == "__main__":
 	parser = optparse.OptionParser(prog=prog,version=app.version,description=description,epilog=epilog)
 
 	parser.set_usage('python -m emissary.run [options]')
-	parser.add_option("-c", dest="config", action="store", default=None, help="(defaults to emissary.config)")
+	parser.add_option("-c", "--crontab", dest="crontab", action="store", default=None, help="Crontab to parse")
+	parser.add_option("--config", dest="config", action="store", default=None, help="(defaults to emissary.config)")
 	parser.add_option("-a", "--address", dest="address", action="store", default='0.0.0.0', help="(defaults to 0.0.0.0)")
 	parser.add_option("-p", "--port", dest="port", action="store", default='6362', help="(defaults to 6362)")
 	parser.add_option("-i", "--interactive", dest="interactive", action="store_true", default=False, help="Launch interactive console")
@@ -80,6 +87,10 @@ if __name__ == "__main__":
 
 	if options.config:
 		app.config.from_object(options.config)
+
+	if options.crontab:
+		parse_crontab(options.crontab)
+		raise SystemExit
 
 	app.debug = options.debug
 
@@ -159,17 +170,15 @@ if __name__ == "__main__":
 	# Initialise the feed manager with the logger, load feeds and create inter-process
 	# communication channels.
 	fm = FeedManager(log)
-	fm.load_feeds()
 	fm.db           = db
 	fm.app          = app # Queue access
 
 	# Start the REST interface
 	httpd = WSGIServer(sock, app, certfile=options.cert, keyfile=options.key)
+	httpd.loop.reinit()
 	httpd_process = Process(target=httpd.serve_forever)
 	log("Binding to %s:%s" % (options.address, options.port))
 	httpd_process.start()
-#	d = start_process(app.run, sock)
-#	d = start_process(httpd.serve_forever)
 
 	if options.daemonise:
 		f = file(options.pidfile, 'a')
@@ -181,4 +190,3 @@ if __name__ == "__main__":
 	except KeyboardInterrupt:
 		log("Stopping...")
 		httpd_process.terminate()
-#		d.terminate()

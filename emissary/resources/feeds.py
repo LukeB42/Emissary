@@ -94,6 +94,18 @@ class FeedResource(restful.Resource):
 		parser.add_argument("active",type=bool, default=True, help="Feed is active", required=False)
 		args = parser.parse_args()
 
+		# rename a feed
+		if args.name:
+			pass
+
+		# move feed to a different group
+		if args.group:
+			pass
+
+		# Change feed url and restart
+		if args.url:
+			pass
+
 		return {}
 
 	@gzipped
@@ -107,8 +119,9 @@ class FeedResource(restful.Resource):
 		if not feed:
 			restful.abort(404)
 		app.inbox.put([0, "stop", feed])
+		app.log('%s: %s: Deleting feed "%s".' % (feed.key.name, feed.group.name, feed.name))
 		db.session.delete(feed)
-		
+		db.session.commit()
 
 		return {}
 

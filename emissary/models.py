@@ -95,23 +95,23 @@ class Feed(db.Model):
 
 	def is_running(self):
 		"""
-		 Place a status request in the FeedManager inbox.
-		 The request should include a Queue with which to reply through.
-		 If no reply is received in 2 seconds then the status is None.
+		 Ask the feedmanager what's happening.
 		"""
-		if app.inbox:
-			# Pick the least accessed queue to recieve our response on
-			response_queue = app.queues[-1]
-			qid = hex(id(response_queue))
+		if not app.inbox:
+			return None
+		
+		response_queue = app.queues[-1]
+		qid = hex(id(response_queue))
+		app.inbox.put([qid, "check", self])
 
-			app.inbox.put([qid, "check", self])
-			then = int(time.time())
-			while response_queue.empty():
-				now = int(time.time())
-				if (now - then) >= 2:
-					return None
-			return response_queue.get()
-		return None
+		# Wait two seconds max for a response
+		then = time.time()
+		while response_queue.empty():
+			now = time.time()
+			if (now - then) >= 0.5:
+				return None
+
+		return response_queue.get()
 
 	def jsonify(self, articles=False):
 		response = {}
