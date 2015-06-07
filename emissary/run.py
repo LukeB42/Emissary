@@ -172,6 +172,7 @@ if __name__ == "__main__":
 	fm = FeedManager(log)
 	fm.db           = db
 	fm.app          = app # Queue access
+	fm.load_feeds()
 
 	# Start the REST interface
 	httpd = WSGIServer(sock, app, certfile=options.cert, keyfile=options.key)

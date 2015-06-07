@@ -126,9 +126,11 @@ class ArticleResource(restful.Resource):
 
 		# Boolean option raw for raw text response
 
-		article = [article for article in key.articles if article.uid == uid]
+		article = Article.query.filter(and_(Article.key == key, Article.uid == uid)).first()
+#		article = [article for article in key.articles if article.uid == uid]
+
 		if article:
-			return article[0].jsonify(summary=True, content=True)
+			return article.jsonify(summary=True, content=True)
 		restful.abort(404)
 
 class ArticleCount(restful.Resource):

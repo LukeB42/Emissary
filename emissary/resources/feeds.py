@@ -37,7 +37,6 @@ class FeedCollection(restful.Resource):
 		args = parser.parse_args()
 
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == args.group)).first()
-#		[fg for fg in key.feedgroups if fg.name == args.group]
 		if not fg:
 			return {"message":"Unknown Feed Group %s" % args.group}, 304
 
@@ -60,9 +59,13 @@ class FeedCollection(restful.Resource):
 		db.session.add(key)
 		db.session.commit()
 
-		# Schedule this feed in Process-1. 0 here is a
-		# response queue ID (we're not waiting for a reply)
-		app.inbox.put([0, "start", feed])
+		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == args.name)).first()
+		if not feed:
+			return {"message":"Error saving feed."}, 304
+
+		# Schedule this feed. 0 here is a response
+		# queue ID (we're not waiting for a reply)
+		app.inbox.put([0, "start", [key,feed.name]])
 		return feed.jsonify(), 201
 
 class FeedResource(restful.Resource):
@@ -118,7 +121,7 @@ class FeedResource(restful.Resource):
 		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
 		if not feed:
 			restful.abort(404)
-		app.inbox.put([0, "stop", feed])
+		app.inbox.put([0, "stop", [key, feed.name]])
 		app.log('%s: %s: Deleting feed "%s".' % (feed.key.name, feed.group.name, feed.name))
 		db.session.delete(feed)
 		db.session.commit()

@@ -1,6 +1,7 @@
 from gevent.queue import Queue
 import sys, os, time, pwd, optparse, gevent, hashlib
 
+from sqlalchemy import and_
 from emissary.models import Feed, FeedGroup, APIKey
 from emissary.controllers import cron
 from emissary.controllers import fetch
@@ -76,7 +77,6 @@ class FeedManager(object):
 		 which works with Flask's built in httpd, but that's not as nimble
 		 as gevent.WSGIServer.
 		"""
-		self.load_feeds()
 		self.running = True
 		while self.running:
 			while not self.app.inbox.empty():
@@ -137,7 +137,7 @@ class FeedManager(object):
 		if ct.started == False:
 			feed         = ct.events[0].feed
 			ct = self.create_crontab(feed)
-			self[feed.name] = ct
+			self[ct.name] = ct
 			gevent.spawn(ct.run)
 #			if feed.name in self.crontabs.keys():
 #				self.log("Restarting %s" % ct.name, "warning")
@@ -156,7 +156,9 @@ class FeedManager(object):
 		if len(payload) < 3 or type(payload) != list: return
 		qid, command, args = payload
 		func = getattr(self, "handle_" + command, None)
+		# Execute on messages with a Queue ID of zero without emitting a response
 		if func and not qid: return(func(args))
+		# Otherwise, use response queues based on access times
 		elif func:
 			# We do a double comparison here in order to sort the queue out of the loop
 			q = [q for q in self.app.queues if hex(id(q)) == qid]
@@ -165,7 +167,10 @@ class FeedManager(object):
 				return
 			q=q[0]
 			# Put our response on the queue and rotate its priority.
-			q.put(func(args))
+			try:
+				q.put(func(args))
+			except Exception,e:
+				self.app.log(e.message,'warning')
 			q.access = time.time()
 			self.app.queues.sort(key=lambda q: q.access, reverse=True)
 			return
@@ -180,28 +185,48 @@ class FeedManager(object):
 			return True
 		return False
 
-	def handle_start(self, feed):
+	def handle_start(self, args):
 		"""
 		 Schedule a feed.
+
+		We look the feed up here because for some reason freshly
+		created ones aren't great at journeying over IPC queues.
 		"""
-		print "starting..."
-		print feed
+		key, name = args
+		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
+		if not feed: return
+
+		self.app.log('%s: %s: Scheduling "%s" (%s)' % \
+			(key.name, feed.group.name, feed.name, feed.schedule))
 		ct = self.create_crontab(feed)
-		name = self.generate_crontab_name(ct)
-		self.crontabs[name] = ct
+		self.crontabs[ct.name] = ct
+		gevent.spawn(ct.run)
 		return True
 
-	def handle_stop(self, feed):
+	def handle_stop(self, args):
 		"""
 		 Halt a feed.
+
+		We can't look the feed up from the database here because we may have
+		already deleted it from our records, so instead we iterate through
+		all of our green threads until something sticks.
 		"""
-		print feed
-		name = self.generate_ct_name(feed)
-		ct = self.crontabs[name]
-		ct.kill()
-		print ct
-		del self.crontabs[name]
-		return True
+		key, name = args
+
+		for id, ct in self.crontabs.items():
+			feed = ct.events[0].feed
+			if feed.name == name and feed.key.key == key.key:
+				if self.app.debug:
+					self.app.log('%s: %s: Unscheduling "%s". [thread %s]' % \
+						(key.name, feed.group.name, feed.name, id))
+				else:
+					self.app.log('%s: %s: Unscheduling "%s".' % \
+						(key.name, feed.group.name, feed.name))
+				ct = self.crontabs[id]
+				ct.kill()
+				del self.crontabs[id]
+				return True
+		return False
 
 	def __setitem__(self, name, crontab):
 		if name in self.crontabs.keys():
@@ -211,6 +236,7 @@ class FeedManager(object):
 				self.log("Restarting %s" % name, "warning")
 		crontab.name = name
 		self.crontabs[name] = crontab
+		gevent.spawn(crontab)
 
 	def __getitem__(self, name):
 		if name in self.crontabs.keys():
