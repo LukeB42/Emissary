@@ -5,6 +5,7 @@ gzipping requests thanks to a snippet on pocoo.org and unique ID generation.
 import gzip
 import time
 import base64
+import hashlib
 import datetime
 import functools 
 from emissary import app, db
@@ -12,6 +13,9 @@ from sqlalchemy import or_, and_
 from cStringIO import StringIO as IO
 from flask import after_this_request, request
 from emissary.controllers.cron import parse_timings
+
+def sha1sum(text):
+    return(hashlib.sha1(text).hexdigest())
 
 def get(key, cls, attrs=(), page=0, per_page=50, local=True):
 #

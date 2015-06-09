@@ -15,6 +15,7 @@ import os
 import sys
 import pwd
 import time
+import signal
 import _socket
 import optparse
 from multiprocessing import Process
@@ -23,6 +24,7 @@ from gipc.gipc import _child
 
 from emissary import app, init, db
 from emissary.controllers.log import Log
+from emissary.controllers.scripts import Scripts
 from emissary.controllers.manager import FeedManager
 from emissary.controllers.load import parse_crontab
 
@@ -83,6 +85,7 @@ if __name__ == "__main__":
 	parser.add_option("--debug", dest="debug", action="store_true", default=False, help="Log to stdout")
 	parser.add_option("-d", dest="daemonise", action="store_true", default=False, help="Run in the background")
 	parser.add_option("--run-as", dest="run_as", action="store",default=None, help="(defaults to the invoking user)")
+	parser.add_option("--scripts-dir", dest="scripts_dir", action="store", default="scripts", help="(defaults to ./scripts/)")
 	(options,args) = parser.parse_args()
 
 	if options.config:
@@ -167,8 +170,15 @@ if __name__ == "__main__":
 
 	if options.daemonise: Daemonise(options.pidfile)
 
-	# Initialise the feed manager with the logger, load feeds and create inter-process
-	# communication channels.
+	# Load scripts
+	app.scripts = Scripts(options.scripts_dir)
+	app.scripts.reload()
+
+	# Trap SIGHUP to reload scripts
+	signal.signal(signal.SIGHUP, app.scripts.reload)
+
+
+	# Initialise the feed manager with the logger, provide IPC access and load feeds.
 	fm = FeedManager(log)
 	fm.db           = db
 	fm.app          = app # Queue access

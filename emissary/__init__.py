@@ -18,6 +18,7 @@ app.config.from_object("emissary.config")
 
 app.version = "2.0.0"
 app.inbox = Queue()
+app.scripts     = None
 app.feedmanager = None
 app.config["HTTP_BASIC_AUTH_REALM"] = "Emissary " + app.version
 

@@ -124,6 +124,11 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	log('%s: %s/%s: Stored %s "%s" (%s)' % \
 		(feed.key.name, feed.group.name, feed.name, article.uid, article.title, duration))
 
+
+	for s in app.scripts.scripts.values():
+		log(s)
+		s.execute(env={'article':article})
+
 def fetch_article(key):
 	pass
 
