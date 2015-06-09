@@ -21,7 +21,7 @@ class Scripts(object):
 
 		if self.dir:
 			if self.scripts:
-				app.log("Reloading scripts..")
+				app.log("Reloading scripts.")
 			for file in os.listdir(self.dir):
 				self.unload(file)
 				self.load(file)
@@ -30,7 +30,7 @@ class Scripts(object):
 
 		file = os.path.abspath(os.path.join(self.dir, file))
 		
-		for script in self.scripts.copy():
+		for script in self.scripts.values():
 			if script.file == file: return
 
 		if os.path.isfile(file):
@@ -38,10 +38,10 @@ class Scripts(object):
 			app.log("Loaded %s" % file)
 
 	def unload(self, file):
-		for script in self.scripts.copy():
-			if script.file == file:
-				self.scripts.pop(script)
-		pass
+		file = os.path.abspath(os.path.join(self.dir, file))
+
+		if file in self.scripts:
+			del self.scripts[file]
 
 class Script(object):
     """
@@ -89,8 +89,3 @@ class Script(object):
             return (self.env[key])
         else:
             raise (KeyError(key))
-
-	def __repr__(self):
-		return "<Script %s at %s>" % (self.file, hex(id(self)))
-	def __str__(self):
-		return "<Script %s at %s>" % (self.file, hex(id(self)))

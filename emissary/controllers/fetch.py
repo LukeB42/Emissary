@@ -126,8 +126,10 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 
 
 	for s in app.scripts.scripts.values():
-		log(s)
-		s.execute(env={'article':article})
+		try:
+			s.execute(env={'article':article})
+		except Exception, e:
+			log("Error executing %s: %s." % (s.file, e.message), "error")
 
 def fetch_article(key):
 	pass

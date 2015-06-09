@@ -1,14 +1,28 @@
 # _*_ coding: utf-8 _*_
+#
+# The structure of this package is essentially as follows
+#
+# models.py    Our abstractions for the types of data we persist to a database,
+#              including how to represent columns and joins on other tables as singular
+#              JSON documents. Handy for building list comprehensions of models.
+# resources/   RESTful API endpoints for interacting with models over HTTP
+# controllers/ Miscellaneous utilities used throughout the whole project
+# run.py       A runner program that inserts a database schema if none is present,
+#              binds to a network interface and changes UID if asked.
+# repl.py      An interactive read-eval-print loop for working with the REST interface.
+# config.py    Defines how to obtain a database URI.
+
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
+__all__ = ["client", "controllers", "models", "resources", "run", "repl"]
+
 import time
 from flask import Flask
 from flask.ext import restful
-from pkgutil import extend_path
-from multiprocessing import Queue, cpu_count
 from flask.ext.sqlalchemy import SQLAlchemy
+from multiprocessing import Queue, cpu_count
 from sqlalchemy.engine.reflection import Inspector
 
-__path__ = extend_path(__path__, __name__)
-__all__ = ["client", "controllers", "models", "resources", "run", "repl"]
 
 app = Flask("emissary")
 

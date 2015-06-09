@@ -4,7 +4,9 @@ import cmd
 import json
 import time
 import errno
+import _curses
 import optparse
+import textwrap
 from emissary import app
 from emissary.client import Client
 from emissary.models import APIKey
@@ -90,6 +92,7 @@ class repl(cmd.Cmd):
 			self.display(response)
 
 	def do_exit(self,line):
+		_curses.endwin()
 		raise SystemExit
 
 	def do_read(self,line):
@@ -109,12 +112,28 @@ class repl(cmd.Cmd):
 
 			try:
 				duration = tconv(int(then) - int(data['created']))
-				p.stdin.write('%s (%i lines, fetched %s ago)\n%s\n\n' % \
+				p.stdin.write('%s\n(%i lines, fetched %s ago)\n%s\n\n' % \
 					(data['title'].encode("utf-8", "ignore"),
 					len(data['content'].encode("utf-8","ignore").split("\n"))/2+1,
 					duration,
 					data['url'].encode("utf-8","ignore")))
-				p.stdin.write(data['content'].encode("utf-8","ignore"))
+
+#				p.stdin.write(data['content'].encode("utf-8","ignore"))
+				# Get TTY width and wrap the text
+				s = _curses.initscr()
+				width = s.getmaxyx()[1]
+				_curses.endwin()
+
+				if width > 80:
+					width = 80
+#				else:
+#					width = width - 10
+
+				content = data['content'].encode("utf-8", "ignore")
+				content = '\n'.join(
+					textwrap.wrap(content, width, break_long_words=False, replace_whitespace=False)
+				)
+				p.stdin.write(content)
 
 			except IOError as e:
 				if e.errno == errno.EPIPE or e.errno == errno.EINVAL:
@@ -137,6 +156,7 @@ class repl(cmd.Cmd):
 		self.display(response)
 
 	def do_EOF(self,line):
+		_curses.endwin()
 		print "^D",
 		return True
 
@@ -211,4 +231,5 @@ if __name__ == "__main__":
 		r.cmdloop()
 	except KeyboardInterrupt:
 		print "^C"
+		_curses.endwin()
 		raise SystemExit
