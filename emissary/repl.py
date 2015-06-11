@@ -25,6 +25,8 @@ class repl(cmd.Cmd):
 	prompt = "> "
 	intro = "Emissary %s\nPsybernetics %i\n" % (app.version, time.gmtime()[0])
 	ruler = '-'
+	width = 80
+
 
 	def parse_args(self, args):
 		body = {}
@@ -118,18 +120,16 @@ class repl(cmd.Cmd):
 					duration,
 					data['url'].encode("utf-8","ignore")))
 
-#				p.stdin.write(data['content'].encode("utf-8","ignore"))
-				# Get TTY width and wrap the text
-				s = _curses.initscr()
-				width = s.getmaxyx()[1]
-				_curses.endwin()
-
-				if width > 80:
-					width = 80
-#				else:
-#					width = width - 10
-
 				content = data['content'].encode("utf-8", "ignore")
+				# Get TTY width and wrap the text
+				if self.width == "auto":
+					s = _curses.initscr()
+					width = s.getmaxyx()[1]
+					_curses.endwin()
+
+				else:
+					width = self.width
+
 				content = '\n'.join(
 					textwrap.wrap(content, width, break_long_words=False, replace_whitespace=False)
 				)
@@ -156,7 +156,6 @@ class repl(cmd.Cmd):
 		self.display(response)
 
 	def do_EOF(self,line):
-		_curses.endwin()
 		print "^D",
 		return True
 
@@ -169,6 +168,22 @@ class repl(cmd.Cmd):
 
 	def postloop(self):
 		print
+
+	def do_width(self, line):
+		"""
+		Set the text width for the read command.
+		Acceptable values are an integer amount of characters
+		or "auto".
+		"""
+		if line == "auto":
+			self.width = "auto"
+		elif line == "":
+			print "The current width is set to %s" % str(self.width)
+		else:
+			try:
+				self.width = int(line)
+			except:
+				print "width must be an integer."
 
 	def do_search(self, line):
 		self.do_get("articles/search/" + line)
@@ -231,5 +246,4 @@ if __name__ == "__main__":
 		r.cmdloop()
 	except KeyboardInterrupt:
 		print "^C"
-		_curses.endwin()
 		raise SystemExit

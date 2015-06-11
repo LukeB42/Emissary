@@ -5,6 +5,7 @@ Luke Brooks 2015
 Database layout for Emissary.
 """
 import time
+import snappy
 from uuid import uuid4
 from emissary import db, app
 from multiprocessing import Queue, Manager
@@ -133,15 +134,16 @@ class Feed(db.Model):
 
 class Article(db.Model):
 	__tablename__ = "articles"
-	id      = db.Column(db.Integer(), primary_key=True)
-	key_id  = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
-	uid     = db.Column(db.String())
-	feed_id = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
-	title   = db.Column(db.String(80))
-	url     = db.Column(db.String())
-	content = db.Column(db.String())
-	summary = db.Column(db.String())
-	created = db.Column(db.DateTime(), default=db.func.now())
+	id         = db.Column(db.Integer(), primary_key=True)
+	key_id     = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
+	uid        = db.Column(db.String())
+	feed_id    = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
+	title      = db.Column(db.String(80))
+	url        = db.Column(db.String())
+	content    = db.Column(db.LargeBinary())
+	summary    = db.Column(db.String())
+	created    = db.Column(db.DateTime(), default=db.func.now())
+	compressed = db.Column(db.Boolean(), default=False)
 
 	def __repr__(self):
 		if self.content:
@@ -153,14 +155,18 @@ class Article(db.Model):
 	def jsonify(self, summary=False, content=False):
 		response = {}
 		if self.title:
-			response['title'] = self.title
-			response['url'] = self.url	
+			response['title'] = self.title.encode("utf-8", "ignore")
+			response['url'] = self.url.encode("utf-8", "ignore")
 			response['uid'] = self.uid
 			response['created'] = time.mktime(self.created.timetuple())
+			response['compressed'] = self.compressed
 		if self.feed:
 			response['feed'] = self.feed.name
 		if content and self.content:
-			response['content'] = self.content
+			if self.compressed:
+				response['content'] = snappy.decompress(self.content)
+			else:
+				response['content'] = self.content.encode("utf-8", "ignore")
 		if not content:
 			if self.content:
 				response['content_available'] = True

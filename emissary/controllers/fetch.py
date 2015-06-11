@@ -9,6 +9,18 @@ from emissary.controllers import parser
 from emissary.controllers.utils import uid, tconv
 requests.packages.urllib3.disable_warnings()
 
+# We can transparently cut the size of text we store by about two thirds and decompress on request.
+# The tradeoff0 is that article content can't be searched directly in its compressed form.
+snappy = None
+if app.config['COMPRESS_ARTICLES']:
+	try:
+		import snappy
+	except ImportError:
+		app.log(
+			"Article compression was enabled in the config but python-snappy "
+			" couldn't be found.\n\nTo enable article compression install libsnappy headers and"
+			" python-snappy\n\n"
+		)
 
 # This is a little globally-available (as far as coroutines calling this are concerned)
 # dictionary of urls we've already visited. It permits us to only try a url
@@ -105,18 +117,22 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 #	else:
 #		log("%s:%s: Extracting %s" % (feed.group.name, feed.name, url))
 	try:
-		article_text = parser.extract_body(document.text)
-		summary      = parser.summarise(article_text)
+		article_content = parser.extract_body(document.text)
+		summary      = parser.summarise(article_content)
 	except Exception, e:
 		log("%s: %s: Error parsing %s: %s" % (feed.key.name, feed.group.name, url, e.message))
 		return
 
 	article = Article(
 		url=url,
+		content=article_content,
 		title=title,
-		content=article_text,
 		summary=summary
 	)
+
+	if snappy:
+		article.content = snappy.compress(article_content.encode("utf-8", "ignore"))
+		article.compressed = True
 
 	commit_to_feed(feed, article)
 	now = int(time.time())
