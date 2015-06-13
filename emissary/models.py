@@ -8,6 +8,7 @@ import time
 import snappy
 from uuid import uuid4
 from emissary import db, app
+import sqlalchemy.types as types
 from multiprocessing import Queue, Manager
 from emissary.controllers.utils import uid
 # 
@@ -20,6 +21,34 @@ from emissary.controllers.utils import uid
 # process control
 # Check if the timings have changed after each fetch.
 #
+
+snappy = None
+if app.config['COMPRESS_ARTICLES']:
+	try:
+		import snappy
+	except ImportError:
+		pass
+
+class TransparentCompression(types.TypeDecorator):
+	impl = types.String
+	
+	def load_dialect_impl(self, dialect):
+		return dialect.type_descriptor(types.String(convert_unicode=False))
+
+	def process_bind_param(self, value, dialect):
+		app.log(dir(self))
+		if value and snappy:
+			value = snappy.compress(value.encode("utf-8", "ignore"))
+		return value
+    
+	def process_result_value(self, value, dialect):
+		if value and snappy:
+			value = snappy.decompress(value)
+		return value
+    
+	def copy(self):
+		return TransparentCompression(self.impl.length)
+
 
 class APIKey(db.Model):
 	__tablename__ = 'api_keys'
@@ -140,7 +169,8 @@ class Article(db.Model):
 	feed_id    = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	title      = db.Column(db.String(80))
 	url        = db.Column(db.String())
-	content    = db.Column(db.LargeBinary())
+	content    = db.Column(db.String())
+	ccontent   = db.Column(db.LargeBinary())
 	summary    = db.Column(db.String())
 	created    = db.Column(db.DateTime(), default=db.func.now())
 	compressed = db.Column(db.Boolean(), default=False)
@@ -162,13 +192,13 @@ class Article(db.Model):
 			response['compressed'] = self.compressed
 		if self.feed:
 			response['feed'] = self.feed.name
-		if content and self.content:
-			if self.compressed:
-				response['content'] = snappy.decompress(self.content)
+		if content:
+			if self.ccontent:
+				response['content'] = snappy.decompress(self.ccontent)
 			else:
-				response['content'] = self.content.encode("utf-8", "ignore")
+				response['content'] = self.content
 		if not content:
-			if self.content:
+			if self.content or self.ccontent:
 				response['content_available'] = True
 			else:
 				response['content_available'] = False

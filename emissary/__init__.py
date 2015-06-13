@@ -23,7 +23,6 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from multiprocessing import Queue, cpu_count
 from sqlalchemy.engine.reflection import Inspector
 
-
 app = Flask("emissary")
 
 # This config is the default and can be overridden by
@@ -35,6 +34,7 @@ app.inbox = Queue()
 app.scripts     = None
 app.feedmanager = None
 app.config["HTTP_BASIC_AUTH_REALM"] = "Emissary " + app.version
+
 
 # These are response queues that enable the main thread of execution to
 # share data with the REST interface. Mainly for reporting the status of crontabs.
