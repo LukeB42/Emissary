@@ -21,7 +21,6 @@ class FeedManager(object):
 		self.crontabs    = {}
 		self.threads     = []
 		self.revived     = {} # {name: [amt, time]}
-#		gevent.Greenlet.__init__(self)
 
 	def load_feeds(self):
 		"""

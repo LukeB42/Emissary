@@ -170,3 +170,26 @@ class FeedArticleSearch(restful.Resource):
 
 	def get(self):
 		return {}
+
+class FeedStartResource(restful.Resource):
+
+	def post(self, name):
+		key = auth()
+
+		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+		if feed:
+			app.inbox.put([0, "start", [key, feed.name]])
+			return feed.jsonify()
+		restful.abort(404)
+
+class FeedStopResource(restful.Resource):
+
+	def post(self, name):
+		key = auth()
+
+		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+		if feed:
+			app.inbox.put([0, "stop", [key, feed.name]])
+			return feed.jsonify()
+		restful.abort(404)
+
