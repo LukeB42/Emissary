@@ -189,10 +189,10 @@ class Article(db.Model):
 			response['url'] = self.url.encode("utf-8", "ignore")
 			response['uid'] = self.uid
 			response['created'] = time.mktime(self.created.timetuple())
-			response['compressed'] = self.compressed
 		if self.feed:
 			response['feed'] = self.feed.name
 		if content:
+			response['compressed'] = self.compressed
 			if self.ccontent:
 				response['content'] = snappy.decompress(self.ccontent)
 			else:

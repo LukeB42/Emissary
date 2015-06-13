@@ -126,7 +126,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 
 	# Check whether to store the full content or compressed
 	if not app.config['COMPRESS_ARTICLES']:
-		content=article_content
+		article.content=article_content
 	else:
 		article.ccontent = snappy.compress(article_content.encode("utf-8", "ignore"))
 		article.compressed = True

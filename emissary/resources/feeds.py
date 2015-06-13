@@ -109,6 +109,9 @@ class FeedResource(restful.Resource):
 		if args.url:
 			pass
 
+		if args.schedule:
+			pass
+
 		return {}
 
 	@gzipped

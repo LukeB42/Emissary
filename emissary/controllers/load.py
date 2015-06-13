@@ -40,7 +40,7 @@ def create_feed(log, db, key, group, feed):
 			return 
 
 	if not fg:
-		log('%s: Creating feed group %s.' % group)
+		log('%s: Creating feed group %s.' % (key.name, group))
 		fg = FeedGroup(name=group)
 		key.feedgroups.append(fg)
 
@@ -106,10 +106,10 @@ def parse_crontab(filename):
 
 			# Grab names and groups
 			names = spaceparse(line)
-			if len(names) != 2:
+			if not names:
 				print "Error parsing feed or group name at line %i in %s: %s" % (i+1, filename, line)
 				continue
-			feed['name'], group = names
+			feed['name'], group = names[:2]
 
 			# The schedule should be the last five items
 			schedule = line.split()[-5:]
