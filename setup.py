@@ -48,7 +48,6 @@ setup(name='Emissary',
       data_files = data_files,
       packages=['emissary', 'emissary.resources', 'emissary.controllers'],
       include_package_data=True,
-#     templates and static..
       install_requires=[
           "setproctitle",
           "goose-extractor",
@@ -59,6 +58,7 @@ setup(name='Emissary',
           "cssselect",
           "BeautifulSoup",
           "feedparser",
+          "python-snappy"
       ],
       keywords=["text extraction","document archival","document retrieval","REST"]
 )

@@ -36,10 +36,21 @@ sudo python setup.py install
   --scripts-dir         (defaults to ./scripts/)
 
 
-On first running the program you'll be issued with your first API key.
+Some initial setup has to be done before the system will start.
+Communication with Emissary is mainly done over HTTPS connections
+and for that you're going to need an SSL certificate and a key:
+
 user@host $ openssl genrsa 1024 > key
 user@host $ openssl req -new -x509 -nodes -sha1 -days 365 -key key > cert
-user@host $ python -m emissary.run --cert cert --key key
+
+To prevent your API keys ever getting put into version control for all
+the world to see, we need to put a database URI into the environment:
+
+export EMISSARY_DATABASE="sqlite://///home/YOUR_USERNAME/.emissary.db"
+
+Then start an instance in the foreground to obtain your first API key:
+
+user@host $ python -m emissary.run --cert cert --key key -d
 
 
 user@host $ cat feeds.txt
