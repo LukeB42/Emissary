@@ -58,9 +58,8 @@ e5a59e0a-b457-45c6-9d30-d983419c43e1
 14/06/2015 16:31:31 - Emissary - ERROR - /home/luke/scripts isn't a valid system path.
 14/06/2015 16:31:31 - Emissary - INFO - Primary: Processing feed groups.
 14/06/2015 16:31:31 - Emissary - INFO - Binding to 0.0.0.0:6362
-
+^C
 That UUID is your Primary API key. Add it to this example crontab:
-
 
 user@host $ cat feeds.txt
 apikey: your-api-key-here
@@ -69,9 +68,6 @@ apikey: your-api-key-here
 http://news.ycombinator.com/rss                       "HN"         "HN"      15!     *       *       *       *
 http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3!      *       *       *
 
-
-
-
 user@host $ python -m emissary.run -c feeds.txt
 Using API key "Primary".
 Primary: Creating feed group HN.
@@ -79,17 +75,19 @@ Primary: HN: Creating feed "HN"
 Primary: Creating feed group Reuters.
 Primary: Reuters: Creating feed "Reuters UK"
 
-Emissary supports multiple apikey directives in one crontab.
-Subsequent feed definitions are associated with the prior apikey definition.
 
-Start up an instance in the background and connect to it:
-user@host $ python -m emissary.run --cert cert --key key -d
+Emissary supports multiple apikey directives in one crontab.
+Subsequent feed definitions are associated with the previous key.
+
+Start an instance in the background and connect to it:
+user@host $ python -m emissary.run -d --cert cert --key key
 user@host $ python -m emissary.repl
 Emissary 2.0.0
 Psybernetics 2015
 
-(0) > help
+(3,204) > help
 
-
+Check the included hello.py in the package scripts/ directory
+for hints about post-store scripts.
 </pre>
 
