@@ -89,7 +89,11 @@ Psybernetics 2015
 
 (3,204) > help
 
+If you're concerned about creating an NSA profile of yourself then
+my advice is to subscribe to everything and review articles privately.
+
 Check the included hello.py in the package scripts/ directory
 for hints about post-store scripts.
+
 </pre>
 
