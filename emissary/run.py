@@ -19,8 +19,6 @@ import signal
 import _socket
 import optparse
 from multiprocessing import Process
-#from gipc import start_process
-from gipc.gipc import _child
 
 from emissary import app, init, db
 from emissary.controllers.log import Log
