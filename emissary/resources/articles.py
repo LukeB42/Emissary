@@ -62,7 +62,7 @@ class ArticleCollection(restful.Resource):
 
 class ArticleSearch(restful.Resource):
 
-	def get(self, term):
+	def get(self, terms):
 		"""
 		 Return the amount of articles belonging to an API key.
 		"""
@@ -80,7 +80,7 @@ class ArticleSearch(restful.Resource):
 						and_(
 							Article.key == key,
 							Article.content != None,
-							Article.title.like("%" + term + "%")
+							Article.title.like("%" + terms + "%")
 						))
 					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
 			]
@@ -101,19 +101,19 @@ class ArticleSearch(restful.Resource):
 						and_(
 							Article.key == key,
 							Article.content == None,
-							Article.title.like("%" + term + "%")
+							Article.title.like("%" + terms + "%")
 						))
 					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
 			]
 
 		return [a.jsonify() for a in \
 				Article.query.filter(
-					and_(Article.key == key, Article.title.like("%" + term + "%")))
+					and_(Article.key == key, Article.title.like("%" + terms + "%")))
 				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
 		]
 
 		return [a.jsonify() for a in Article.query.filter(
-			and_(Article.key == key,Article.title.like("%" + term + "%"))
+			and_(Article.key == key,Article.title.like("%" + terms + "%"))
 		).all()]
 
 class ArticleResource(restful.Resource):
@@ -124,13 +124,10 @@ class ArticleResource(restful.Resource):
 		"""
 		key = auth()
 
-		# Boolean option raw for raw text response
-
 		article = Article.query.filter(and_(Article.key == key, Article.uid == uid)).first()
-#		article = [article for article in key.articles if article.uid == uid]
-
 		if article:
 			return article.jsonify(summary=True, content=True)
+
 		restful.abort(404)
 
 class ArticleCount(restful.Resource):

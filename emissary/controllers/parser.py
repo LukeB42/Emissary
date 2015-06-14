@@ -33,7 +33,10 @@ def extract_links(response):
 
 class Parser(object):
 	"""
-	Mostly for building a list of relevant links from a string of html.
+	Build a list of relevant links from an HTML string and the root URL.
+
+	p = Parser(html_text, root_url)
+	urls = p.parse()
 	"""
 	def __init__(self,html=None,doc=None,url=None):
 		self.html=html
@@ -109,6 +112,15 @@ def extract_body(html):
 	g = Goose()
 	article = g.extract(raw_html=html)
 	return article.cleaned_text
+
+def extract_title(html):
+	"""
+	 Extract the body title of a web page
+	"""
+	g = Goose()
+	article = g.extract(raw_html=html)
+	return article.title
+
 
 def summarise(article):
 	stopnum = c = 0

@@ -60,7 +60,8 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	if type(link) == dict:
 		for url, title in link.items(): continue
 	else:
-		url = link
+		url   = link
+		title = None
 
 	# Skip this url if we've already extracted and stored it for this feed, unless we're overwriting.
 	if Article.query.filter(and_(Article.url == url), Article.feed == feed).first():
@@ -98,6 +99,8 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	# Mimetype detection.
 	if 'content-type' in document.headers:
 		if 'application' in document.headers['content-type']:
+			if not title:
+				title = url
 			article = Article(
 				url=url,
 				title=title,
@@ -107,10 +110,6 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 				(feed.key.name, feed.group.name, feed.name, article.uid, url, document.headers['content-type']))
 			return
 
-#	if title:
-#		log('%s:%s: Extracting "%s"' % (feed.group.name, feed.name, title))
-#	else:
-#		log("%s:%s: Extracting %s" % (feed.group.name, feed.name, url))
 	try:
 		article_content = parser.extract_body(document.text)
 		summary      = parser.summarise(article_content)
@@ -118,13 +117,16 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		log("%s: %s: Error parsing %s: %s" % (feed.key.name, feed.group.name, url, e.message))
 		return
 
+	if not title:
+		title = parser.extract_title(document.text)
+
 	article = Article(
 		url=url,
 		title=title,
 		summary=summary
 	)
 
-	# Check whether to store the full content or compressed
+	# Determine whether to store the full content or a compressed copy
 	if not app.config['COMPRESS_ARTICLES']:
 		article.content=article_content
 	else:

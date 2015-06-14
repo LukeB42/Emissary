@@ -76,7 +76,7 @@ def init():
 	api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
 	api.add_resource(articles.ArticleCollection,     "/articles")
 	api.add_resource(articles.ArticleResource,       "/articles/<string:uid>")
-	api.add_resource(articles.ArticleSearch,         "/articles/search/<string:term>")
+	api.add_resource(articles.ArticleSearch,         "/articles/search/<string:terms>")
 	api.add_resource(articles.ArticleCount,          "/articles/count")
 
 	# Create the database schema if it's not already laid out.
