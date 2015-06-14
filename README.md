@@ -2,7 +2,9 @@ Emissary
 ========
 
 A democracy thing for researchers, programmers and news junkies who want personally curated news archives.
+
 Emissary is a web content extractor that has a RESTful API and a scripting system.
+
 Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
 
 --------
