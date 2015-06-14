@@ -2,9 +2,7 @@ Emissary
 ========
 
 A democracy thing for researchers, programmers and news junkies who want personally curated news archives.
-
 Emissary is a web content extractor that has a RESTful API and a scripting system.
-
 Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
 
 --------
@@ -91,11 +89,11 @@ Psybernetics 2015
 
 Check the included hello.py in the package scripts/ directory
 for hints about post-store scripts.
+</pre>
 
 If the prospect of creating an NSA profile of your reading habits is
 something that rightfully bothers you then my advice is to subscribe
 to many things and then use Emissary to read the things that really 
 interest you.
 
-</pre>
 
