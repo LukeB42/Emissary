@@ -1,5 +1,5 @@
 apikey: your-api-key-here
 
 # url                                                 name         group     minute  hour    day     month   weekday
-http://news.ycombinator.com/rss                       "HN"         "HN"      0       2!      *       *       *
-http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3,9     *       *       *
+http://news.ycombinator.com/rss                       "HN"         "HN"      20!     *       *       *       *
+http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3!      *       *       *

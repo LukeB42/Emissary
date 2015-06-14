@@ -13,7 +13,7 @@ Optional article compression also requires libsnappy.
 All of these can be obtained on debian-based systems with:
 sudo apt-get install -y zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent-dev libsnappy-dev
 
-Then to install the package for all users:
+Then you're ready to install the package for all users:
 sudo python setup.py install
 
 
@@ -24,7 +24,6 @@ sudo python setup.py install
   --config              (defaults to emissary.config)
   -a, --address         (defaults to 0.0.0.0)
   -p, --port            (defaults to 6362)
-  -i, --interactive     Launch interactive console
   --key                 SSL key file
   --cert                SSL certificate
   --pidfile             (defaults to ./emissary.pid)
@@ -44,25 +43,53 @@ user@host $ openssl genrsa 1024 > key
 user@host $ openssl req -new -x509 -nodes -sha1 -days 365 -key key > cert
 
 To prevent your API keys ever getting put into version control for all
-the world to see, we need to put a database URI into the environment:
+the world to see, you need to put a database URI into the environment:
 
 export EMISSARY_DATABASE="sqlite://///home/YOUR_USERNAME/.emissary.db"
 
-Then start an instance in the foreground to obtain your first API key:
+Protip: Put that last line in your shells' rc file.
 
-user@host $ python -m emissary.run --cert cert --key key -d
+Start an instance in the foreground to obtain your first API key:
+
+user@host $ python -m emissary.run --cert cert --key key
+
+14/06/2015 16:31:30 - Emissary - INFO - Starting Emissary 2.0.0.
+e5a59e0a-b457-45c6-9d30-d983419c43e1
+14/06/2015 16:31:31 - Emissary - ERROR - /home/luke/scripts isn't a valid system path.
+14/06/2015 16:31:31 - Emissary - INFO - Primary: Processing feed groups.
+14/06/2015 16:31:31 - Emissary - INFO - Binding to 0.0.0.0:6362
+
+That UUID is your Primary API key. Add it to this example crontab:
 
 
 user@host $ cat feeds.txt
 apikey: your-api-key-here
 
 # url                                                 name         group     minute  hour    day     month   weekday
-http://news.ycombinator.com/rss                       "HN"         "HN"      0       2!      *       *       *
-http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3,9     *       *       *
+http://news.ycombinator.com/rss                       "HN"         "HN"      15!     *       *       *       *
+http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3!      *       *       *
+
+
+
 
 user@host $ python -m emissary.run -c feeds.txt
-user@host $ python -m emissary.repl
+Using API key "Primary".
+Primary: Creating feed group HN.
+Primary: HN: Creating feed "HN"
+Primary: Creating feed group Reuters.
+Primary: Reuters: Creating feed "Reuters UK"
 
-(3,189) > help
+Emissary supports multiple apikey directives in one crontab.
+Subsequent feed definitions are associated with the prior apikey definition.
+
+Start up an instance in the background and connect to it:
+user@host $ python -m emissary.run --cert cert --key key -d
+user@host $ python -m emissary.repl
+Emissary 2.0.0
+Psybernetics 2015
+
+(0) > help
+
+
 </pre>
 
