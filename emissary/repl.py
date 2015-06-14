@@ -252,7 +252,16 @@ if __name__ == "__main__":
 	r.c = Client('','https://%s' % options.host, verify=False)
 
 	r.c.key = ""
-	k = APIKey.query.first()
+
+	try:
+		k = APIKey.query.first()
+	except Exception, e:
+		print "Encountered an error:"
+		print e.message
+		print "This either means there's no URI exported as EMISSARY_DATABASE or you've exported a URI"
+		print "but haven't given emissary a first run in order to write the schema and a primary API key."
+		raise SystemExit
+
 	if k: r.c.key = k.key
 	r.c.verify_https = False
 	r.highlight = highlight
