@@ -89,11 +89,13 @@ Psybernetics 2015
 
 (3,204) > help
 
-If you're concerned about creating an NSA profile of yourself then
-my advice is to subscribe to everything and review articles privately.
-
 Check the included hello.py in the package scripts/ directory
 for hints about post-store scripts.
+
+If the prospect of creating an NSA profile of your reading habits is
+something that rightfully bothers you then my advice is to subscribe
+to many things and then use Emissary to read the things that really 
+interest you.
 
 </pre>
 
