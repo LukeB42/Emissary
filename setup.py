@@ -56,6 +56,9 @@ setup(name='Emissary',
           "gevent",
           "Flask-RESTful",
           "Flask-SQLAlchemy",
+          "cssselect",
+          "BeautifulSoup",
+          "feedparser",
       ],
       keywords=["text extraction","document archival","document retrieval","REST"]
 )

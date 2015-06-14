@@ -1,63 +1,57 @@
 Emissary
 ========
 
-For researchers, programmers and news junkies who want personally curated news archives.
-Emissary is a web content extractor that has a RESTful API.
+A democracy thing for researchers, programmers and news junkies who want personally curated news archives.
+Emissary is a web content extractor that has a RESTful API and a scripting system.
 Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
-
-Cron for indexing HTTP resources.
 
 --------
 <pre>
-Emissary is a daemon for periodically extracting
-the body text of online articles from sites like news agencies and blogs.
 
-A client library is included to integrate with other programs.
+Installation requires the python interpreter headers, libevent, libxml2 and libxslt headers.
+Optional article compression also requires libsnappy. 
+All of these can be obtained on debian-based systems with:
+sudo apt-get install -y zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent-dev libsnappy-dev
 
-./Emissary --start        (default)
-./Emissary --stop         Stop Emissary immediately.
-./Emissary --restart
-./Emissary --foreground   Don't daemonize.
-./Emissary --logfile      Write output to file.
-./Emissary --debug        Enable debugging output.
-./Emissary --add-user     Add a user to the system.
-./Emissary --interactive  Launch interactive shell.
-./Emissary --run-as       (defaults to the invoking user)
-./Emissary --driver       (defaults to sqlite)
-./Emissary --db           (defaults to ./cache.db)
-./Emissary --address      (defaults to 127.0.0.1)
-./Emissary --port         (defaults to 6362)
+Then to install the package for all users:
+sudo python setup.py install
 
 
-Add feeds by writing them to a file and then pipe the file into Emissary:
+ Usage: python -m emissary.run <args>
+
+  -h, --help            show this help message and exit
+  -c, --crontab         Crontab to parse
+  --config              (defaults to emissary.config)
+  -a, --address         (defaults to 0.0.0.0)
+  -p, --port            (defaults to 6362)
+  -i, --interactive     Launch interactive console
+  --key                 SSL key file
+  --cert                SSL certificate
+  --pidfile             (defaults to ./emissary.pid)
+  --logfile             (defaults to ./emissary.log)
+  --stop                
+  --debug               Log to stdout
+  -d                    Run in the background
+  --run-as              (defaults to the invoking user)
+  --scripts-dir         (defaults to ./scripts/)
+
+
+On first running the program you'll be issued with your first API key.
+user@host $ openssl genrsa 1024 > key
+user@host $ openssl req -new -x509 -nodes -sha1 -days 365 -key key > cert
+user@host $ python -m emissary.run --cert cert --key key
+
+
 user@host $ cat feeds.txt
-db_limit 5g
-# url                    name    minute  hour    day month   weekday
-http://feed.tld/rss     'feed'   0       6,12    *   0-11    mon-fri
+apikey: your-api-key-here
 
-user@host $ cat feeds.txt | ./Emissary
-user@host $ ./Emissary --add-user
-user@host $ ./Emissary
-user@host $ ./Emissary --interactive
+# url                                                 name         group     minute  hour    day     month   weekday
+http://news.ycombinator.com/rss                       "HN"         "HN"      0       2!      *       *       *
+http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3,9     *       *       *
+
+user@host $ python -m emissary.run -c feeds.txt
+user@host $ python -m emissary.repl
 
 (3,189) > help
 </pre>
 
-#### INSTALLATION:
---------
-gevent==1.0
-
-dataset==0.3.14
-
-requests==2.1.0
-
-feedparser==5.1.3
-
-goose-extractor==1.0.6
-
-
-Debian-based systems may require the following:
-
-sudo aptitude install zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent
-
-sudo pip install lxml BeautifulSoup cssselect feedparser gevent requests sqlalchemy dataset
