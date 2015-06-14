@@ -40,10 +40,11 @@ data_files = (
 
 setup(name='Emissary',
       version="2.0.0",
-      description='A microservice for indexing text from RSS feeds.',
+      description='A microservice for indexing the plain text of articles and essays',
       author='Luke Brooks',
       author_email='luke@psybernetics.org.uk',
-      url='http://psybernetics.org.uk/',
+      url='http://psybernetics.org.uk/emissary',
+      download_url = 'https://github.com/LukeB42/Emissary/tarball/2.0.0',
       data_files = data_files,
       packages=['emissary', 'emissary.resources', 'emissary.controllers'],
       include_package_data=True,
@@ -55,5 +56,6 @@ setup(name='Emissary',
           "gevent",
           "Flask-RESTful",
           "Flask-SQLAlchemy",
-      ]
+      ],
+      keywords=["text extraction","document archival","document retrieval","REST"]
 )

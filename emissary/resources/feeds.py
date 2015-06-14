@@ -51,6 +51,8 @@ class FeedCollection(restful.Resource):
 			return {"message": "A feed on this key already exists with this name or url."}, 500
 
 		feed = Feed(name=args.name, url=args.url, schedule=args.schedule, active=args.active)
+
+		# We generally don't want to have objects in this system that don't belong to API keys.
 		fg.feeds.append(feed)
 		key.feeds.append(feed)
 
@@ -90,29 +92,46 @@ class FeedResource(restful.Resource):
 		key = auth()
 
 		parser = restful.reqparse.RequestParser()
-		parser.add_argument("name",type=str, help="", required=True)
-		parser.add_argument("group",type=str, help="", required=True)
-		parser.add_argument("url",type=str, help="", required=True)
-		parser.add_argument("schedule",type=str, help="", required=True)
-		parser.add_argument("active",type=bool, default=True, help="Feed is active", required=False)
+		parser.add_argument("name",type=str, help="")
+		parser.add_argument("group",type=str, help="")
+		parser.add_argument("url",type=str, help="")
+		parser.add_argument("schedule",type=str, help="")
+		parser.add_argument("active",type=bool, default=None, help="Feed is active")
 		args = parser.parse_args()
 
-		# rename a feed
-		if args.name:
-			pass
+		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
+		if not feed:
+			restful.abort(404)
 
-		# move feed to a different group
+		if args.name:
+			if Feed.query.filter(and_(Feed.key == key, Feed.name == args.name)).first():
+				return {"message":"A feed already exists with this name."}, 304
+			feed.name = args.name
+
 		if args.group:
 			pass
 
-		# Change feed url and restart
+		if args.active != None:
+			feed.active = args.active
+
 		if args.url:
-			pass
+			feed.url = args.url
 
 		if args.schedule:
-			pass
+			try:
+				parse_timings(args.schedule)
+			except CronError, err:
+				return {"message": err.message}, 500
+			feed.schedule = args.schedule
 
-		return {}
+		db.session.add(feed)
+		db.session.commit()
+
+		if args.url or args.schedule:
+			app.inbox.put([0, "stop", [feed.key, feed.name]])
+			app.inbox.put([0, "start", [feed.key, feed.name]])
+			
+		return feed.jsonify()
 
 	@gzipped
 	def delete(self, name):

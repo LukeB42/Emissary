@@ -222,7 +222,7 @@ class FeedManager(object):
 					self.app.log('%s: %s: Unscheduling "%s".' % \
 						(key.name, feed.group.name, feed.name))
 				ct = self.crontabs[id]
-				ct.kill()
+				gevent.kill(ct)
 				del self.crontabs[id]
 				return True
 		return False

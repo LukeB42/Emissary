@@ -145,7 +145,7 @@ class repl(cmd.Cmd):
 			p.wait()
 			now = time.time()
 			duration = tconv(now-then)
-			print "\n%s" % duration
+#			print "\n%s" % duration
 
 	def do_delete(self,line):
 		if ' ' in line:
