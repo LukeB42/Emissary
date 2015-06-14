@@ -56,6 +56,7 @@ class repl(cmd.Cmd):
 			return "no connection> "
 
 	def do_setkey(self,key):
+		"Sets the API key to transmit requests with."
 		if key:
 			self.c.key = key
 			print 'Changed active API key to "%s"' % key
@@ -67,14 +68,24 @@ class repl(cmd.Cmd):
 		self.do_setkey(key)
 
 	def do_getkey(self,line):
+		"Displays the current API key."
 		print self.c.key
 
 	def do_get(self,line):
+		"""
+		Sends GET requests
+		EG: get articles
+		    get feeds
+		    get feedgroups
+		"""
 		response = self.c._send_request(line)
 		self.display(response)
 
 	def do_put(self,line):
-		"Create a new feed or feed group."
+		"""
+		Creates a new feed or feed group.
+		EG: put feedgroups name=HN
+		"""
 		if not ' ' in line:
 			print "Need data to transmit."
 		else:
@@ -85,6 +96,11 @@ class repl(cmd.Cmd):
 
 
 	def do_post(self,line):
+		"""
+		Modifies an existing feed or feed group.
+		EG: post feeds/SomeFeed schedule="20 3 2! * *"
+		"""
+
 		if not ' ' in line:
 			print "Need data to transmit."
 		else:
@@ -98,6 +114,12 @@ class repl(cmd.Cmd):
 		raise SystemExit
 
 	def do_read(self,line):
+		"""
+		Usage: read <article_uid>
+		Pipes article content into the system pager.
+
+		Text column width can be configured with the width command.
+		"""
 		then = time.time()
 		response = self.c._send_request("articles/" + line)
 		if response[1] != 200:
@@ -148,6 +170,10 @@ class repl(cmd.Cmd):
 #			print "\n%s" % duration
 
 	def do_delete(self,line):
+		"""
+		Sends a DELETE request.
+		EG: delete feeds/somefeed
+		"""
 		if ' ' in line:
 			line, body = line.split(' ',1)
 			body = self.parse_args(body)
@@ -172,8 +198,7 @@ class repl(cmd.Cmd):
 	def do_width(self, line):
 		"""
 		Set the text width for the read command.
-		Acceptable values are an integer amount of characters
-		or "auto".
+		Acceptable values are an integer amount of characters or "auto".
 		"""
 		if line == "auto":
 			self.width = "auto"
@@ -189,6 +214,11 @@ class repl(cmd.Cmd):
 		self.do_get("articles/search/" + line)
 
 	def do_style(self, style):
+		"""
+		Usage: style <theme_name>
+		Lists the available themes if no
+		name is supplied, or sets the theme to use.
+		"""
 		if not self.highlight:
 			print "For syntax highlighting you will need to install the Pygments package."
 			print "sudo pip install pygments"
@@ -234,14 +264,6 @@ if __name__ == "__main__":
 			for s in r.AVAILABLE_STYLES: break
 			r.style = s
 	r.c._send_request = reqwrap(r.c._send_request)
-#	try:
-#		article_count = r.c.get("articles/count")[0]
-#		if article_count:
-#			r.intro = "Emissary %s. %i articles.\nPsybernetics %i\n" % \
-#				(app.version, article_count, time.gmtime()[0])
-#	except:
-#		pass
-
 	try:
 		r.cmdloop()
 	except KeyboardInterrupt:
