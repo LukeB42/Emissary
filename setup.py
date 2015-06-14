@@ -58,7 +58,7 @@ setup(name='Emissary',
           "cssselect",
           "BeautifulSoup",
           "feedparser",
-          "python-snappy"
+          "python-snappy",
           "requests"
       ],
       keywords=["text extraction","document archival","document retrieval","REST"]
