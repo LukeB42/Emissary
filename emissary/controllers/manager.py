@@ -53,7 +53,8 @@ class FeedManager(object):
 						(key.name, fg.name, feed.name, feed.schedule))
 
 					ct = self.create_crontab(feed)
-					g  = gevent.spawn(ct.run)
+					g = gevent.spawn(ct.run)
+					g.name = ct.name
 					self.threads.append(g)
 					name = self.generate_ct_name(feed)
 					self.crontabs[name] = ct
@@ -199,7 +200,9 @@ class FeedManager(object):
 			(key.name, feed.group.name, feed.name, feed.schedule))
 		ct = self.create_crontab(feed)
 		self.crontabs[ct.name] = ct
-		gevent.spawn(ct.run)
+		g = gevent.spawn(ct.run)
+		g.name = ct.name
+		self.threads.append(g)
 		return True
 
 	def handle_stop(self, args):
@@ -221,8 +224,15 @@ class FeedManager(object):
 				else:
 					self.app.log('%s: %s: Unscheduling "%s".' % \
 						(key.name, feed.group.name, feed.name))
-				ct = self.crontabs[id]
-				gevent.kill(ct)
+				for t in self.threads:
+					if t.name == id:
+						gevent.kill(t)
+						break
+				self.threads.remove(t)
+#				ct = self.crontabs[id]
+#				ct.kill()
+#				gevent.kill(ct)
+				del ct
 				del self.crontabs[id]
 				return True
 		return False

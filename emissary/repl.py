@@ -256,10 +256,9 @@ if __name__ == "__main__":
 	try:
 		k = APIKey.query.first()
 	except Exception, e:
-		print "Encountered an error:"
-		print e.message
+		print "Encountered an error: " + e.message
 		print "This either means there's no URI exported as EMISSARY_DATABASE or you've exported a URI"
-		print "but haven't given emissary a first run in order to write the schema and a primary API key."
+		print "but haven't given Emissary a first run in order to write the schema and a primary API key."
 		raise SystemExit
 
 	if k: r.c.key = k.key
