@@ -109,7 +109,7 @@ def extract_body(html):
 	"""
 	 Extract the body text of a web page
 	"""
-	g = Goose()
+	g = Goose({'enable_image_fetching':False})
 	article = g.extract(raw_html=html)
 	return article.cleaned_text
 
@@ -117,7 +117,7 @@ def extract_title(html):
 	"""
 	 Extract the body title of a web page
 	"""
-	g = Goose()
+	g = Goose({'enable_image_fetching':False})
 	article = g.extract(raw_html=html)
 	return article.title
 
