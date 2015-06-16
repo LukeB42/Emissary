@@ -1,6 +1,6 @@
 # _*_ coding: utf-8 _*_
 #
-# This script creates a named pipe if it doesn't exist
+# This script creates a named pipe (if it doesn't exist)
 # and writes the feed name, article title and url to it
 # whenever an article is saved to the database. 
 #

@@ -11,6 +11,11 @@
 #              binds to a network interface and changes UID if asked.
 # repl.py      An interactive read-eval-print loop for working with the REST interface.
 # config.py    Defines how to obtain a database URI.
+"""
+A democracy thing for researchers, programmers and news junkies who want personally curated news archives.
+Emissary is a web content extractor that has a RESTful API and a scripting system.
+Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
+"""
 
 from pkgutil import extend_path
 __path__ = extend_path(__path__, __name__)
@@ -67,13 +72,29 @@ def init():
 
 	api.add_resource(api_key.KeyCollection,          "/keys")
 	api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
-	api.add_resource(feeds.FeedCollection,           "/feeds")
-	api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
+#	api.add_resource(feeds.FeedCollection,           "/feeds")
+#	api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
 	api.add_resource(feeds.FeedArticleCollection,    "/feeds/<string:name>/articles")
 	api.add_resource(feeds.FeedStartResource,        "/feeds/<string:name>/start")
 	api.add_resource(feeds.FeedStopResource,         "/feeds/<string:name>/stop")
-	api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
-	api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
+
+
+	api.add_resource(feedgroups.FeedGroupCollection, "/feeds")
+	api.add_resource(feedgroups.FeedGroupResource,   "/feeds/<string:groupname>")
+	api.add_resource(feedgroups.FeedGroupArticles,   "/feeds/<string:groupname>/articles")
+	api.add_resource(feedgroups.FeedGroupStart,      "/feeds/<string:groupname>/start")
+	api.add_resource(feedgroups.FeedGroupStop,       "/feeds/<string:groupname>/stop")
+	api.add_resource(feedgroups.FeedGroupSearch,     "/feeds/<string:groupname>/search")
+	api.add_resource(feedgroups.FeedGroupCount,      "/feeds/<string:groupname>/count")
+
+#	api.add_resource(feeds.FeedResource,             "/feeds/<string:groupname>/<string:name>")
+#	api.add_resource(feeds.FeedArticleCollection,    "/feeds/<string:groupname>/<string:name>/articles")
+#	api.add_resource(feeds.FeedStartResource,        "/feeds/<string:groupname>/<string:name>/start")
+#	api.add_resource(feeds.FeedStopResource,         "/feeds/<string:groupname>/<string:name>/stop")
+
+
+#	api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
+#	api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
 	api.add_resource(articles.ArticleCollection,     "/articles")
 	api.add_resource(articles.ArticleResource,       "/articles/<string:uid>")
 	api.add_resource(articles.ArticleSearch,         "/articles/search/<string:terms>")

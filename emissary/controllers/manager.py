@@ -114,7 +114,10 @@ class FeedManager(object):
 		 hopefully unique between multiple feeds in multiple groups
 		 on multiple API keys.
 
-		 Determining the feed.key.key string here proved to be too expensive.
+		 Determining the feed.key.key string here proved to be too expensive,
+		 so instead it's trusted that the name and creation time are unique enough.
+
+		 Improvements to this implementation are most welcome.
 		"""
 		return hashlib.sha1("%s %s" % (feed.name, feed.created)).hexdigest()
 
@@ -229,9 +232,6 @@ class FeedManager(object):
 						gevent.kill(t)
 						break
 				self.threads.remove(t)
-#				ct = self.crontabs[id]
-#				ct.kill()
-#				gevent.kill(ct)
 				del ct
 				del self.crontabs[id]
 				return True

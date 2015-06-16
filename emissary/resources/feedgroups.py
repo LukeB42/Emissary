@@ -46,18 +46,20 @@ class FeedGroupCollection(restful.Resource):
 class FeedGroupResource(restful.Resource):
 
 	@gzipped
-	def get(self, name):
+	def get(self, groupname):
 		"""
 		 Review a specific feed group.
 		"""
 		key = auth()
-		fg = [fg for fg in key.feedgroups if fg.name == name]
-		if fg:
-			return fg[0].jsonify()
-		restful.abort(404)
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			restful.abort(404)
+		return fg.jsonify()
+
 
 	@gzipped
-	def post(self, name):
+	def post(self, groupname):
 		key = auth()
 
 		parser = restful.reqparse.RequestParser()
@@ -68,10 +70,10 @@ class FeedGroupResource(restful.Resource):
 		return {}
 
 	@gzipped
-	def delete(self, name):
+	def delete(self, groupname):
 		key = auth()
 		
-		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == name)).first()
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:
 			restful.abort(404)
 		count=0
@@ -86,3 +88,69 @@ class FeedGroupResource(restful.Resource):
 		app.log('%s: Deleted feed group "%s". (%s articles)' % (key.name, fg.name, count))
 
 		return {}
+
+class FeedGroupArticles(restful.Resource):
+
+	def get(self, groupname):
+		"""
+		 Retrieve articles by feedgroup.
+		"""
+
+		key = auth()
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			restful.abort(404)
+
+		return {}
+
+class FeedGroupStart(restful.Resource):
+
+	def post(self, groupname):
+		"""
+		 Start all feeds within a group.
+		"""
+		key = auth()
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			restful.abort(404)
+
+		for feed in fg.feeds:
+			app.inbox.put([0, "start", [key,feed.name]])
+		return {}
+
+class FeedGroupStop(restful.Resource):
+
+	def post(self, groupname):
+		key = auth()
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			restful.abort(404)
+
+		for feed in fg.feeds:
+			app.inbox.put([0, "stop", [key,feed.name]])
+		return {}
+
+class FeedGroupSearch(restful.Resource):
+
+	def get(self, groupname):
+		key = auth()
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			restful.abort(404)
+
+		return {}
+
+class FeedGroupCount(restful.Resource):
+
+	def get(self, groupname):
+		key = auth()
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			restful.abort(404)
+
+		return sum(len(f.articles) for f in fg.feeds)
