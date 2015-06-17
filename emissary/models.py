@@ -56,7 +56,7 @@ class APIKey(db.Model):
 	name       = db.Column(db.String(80))
 	key        = db.Column(db.String(120))
 	active     = db.Column(db.Boolean())
-	created    = db.Column(db.DateTime(), default=db.func.now())
+	created    = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	feedgroups = db.relationship("FeedGroup", backref="key")
 	feeds      = db.relationship("Feed", backref="key")
 	articles   = db.relationship("Article", backref="key")
@@ -87,7 +87,7 @@ class FeedGroup(db.Model):
 	uid     = db.Column(db.String(), default=uid())
 	name    = db.Column(db.String(80))
 	feeds   = db.relationship('Feed', backref="group")
-	created = db.Column(db.DateTime(), default=db.func.now())
+	created = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	active  = db.Column(db.Boolean(), default=True)
 
 	def __repr__(self):
@@ -115,7 +115,7 @@ class Feed(db.Model):
 	url      = db.Column(db.String(80))
 	schedule = db.Column(db.String(80))
 	active   = db.Column(db.Boolean(), default=True)
-	created  = db.Column(db.DateTime(), default=db.func.now())
+	created  = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	articles = db.relationship('Article', backref="feed")
 
 	def __repr__(self):
@@ -172,7 +172,7 @@ class Article(db.Model):
 	content    = db.Column(db.String())
 	ccontent   = db.Column(db.LargeBinary())
 	summary    = db.Column(db.String())
-	created    = db.Column(db.DateTime(), default=db.func.now())
+	created    = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	compressed = db.Column(db.Boolean(), default=False)
 
 	def __repr__(self):
@@ -210,7 +210,7 @@ class Event(db.Model):
 	__tablename__ = "events"
 	id = db.Column(db.Integer(), primary_key=True)
 	key_id = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
-	created = db.Column(db.DateTime(), default=db.func.now())
+	created = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	feed_id = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	success = db.Column(db.Boolean())
 	message = db.Column(db.String())

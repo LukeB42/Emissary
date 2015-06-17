@@ -72,29 +72,20 @@ def init():
 
 	api.add_resource(api_key.KeyCollection,          "/keys")
 	api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
-#	api.add_resource(feeds.FeedCollection,           "/feeds")
-#	api.add_resource(feeds.FeedResource,             "/feeds/<string:name>")
-	api.add_resource(feeds.FeedArticleCollection,    "/feeds/<string:name>/articles")
-	api.add_resource(feeds.FeedStartResource,        "/feeds/<string:name>/start")
-	api.add_resource(feeds.FeedStopResource,         "/feeds/<string:name>/stop")
-
 
 	api.add_resource(feedgroups.FeedGroupCollection, "/feeds")
 	api.add_resource(feedgroups.FeedGroupResource,   "/feeds/<string:groupname>")
-	api.add_resource(feedgroups.FeedGroupArticles,   "/feeds/<string:groupname>/articles")
-	api.add_resource(feedgroups.FeedGroupStart,      "/feeds/<string:groupname>/start")
 	api.add_resource(feedgroups.FeedGroupStop,       "/feeds/<string:groupname>/stop")
-	api.add_resource(feedgroups.FeedGroupSearch,     "/feeds/<string:groupname>/search")
+	api.add_resource(feedgroups.FeedGroupStart,      "/feeds/<string:groupname>/start")
+	api.add_resource(feedgroups.FeedGroupArticles,   "/feeds/<string:groupname>/articles")
+	api.add_resource(feedgroups.FeedGroupSearch,     "/feeds/<string:groupname>/search/<string:terms>")
 	api.add_resource(feedgroups.FeedGroupCount,      "/feeds/<string:groupname>/count")
 
-#	api.add_resource(feeds.FeedResource,             "/feeds/<string:groupname>/<string:name>")
-#	api.add_resource(feeds.FeedArticleCollection,    "/feeds/<string:groupname>/<string:name>/articles")
-#	api.add_resource(feeds.FeedStartResource,        "/feeds/<string:groupname>/<string:name>/start")
-#	api.add_resource(feeds.FeedStopResource,         "/feeds/<string:groupname>/<string:name>/stop")
+	api.add_resource(feeds.FeedResource,             "/feeds/<string:groupname>/<string:name>")
+	api.add_resource(feeds.FeedArticleCollection,    "/feeds/<string:groupname>/<string:name>/articles")
+	api.add_resource(feeds.FeedStartResource,        "/feeds/<string:groupname>/<string:name>/start")
+	api.add_resource(feeds.FeedStopResource,         "/feeds/<string:groupname>/<string:name>/stop")
 
-
-#	api.add_resource(feedgroups.FeedGroupCollection, "/feedgroups")
-#	api.add_resource(feedgroups.FeedGroupResource,   "/feedgroups/<string:name>")
 	api.add_resource(articles.ArticleCollection,     "/articles")
 	api.add_resource(articles.ArticleResource,       "/articles/<string:uid>")
 	api.add_resource(articles.ArticleSearch,         "/articles/search/<string:terms>")

@@ -136,7 +136,7 @@ class repl(cmd.Cmd):
 
 			try:
 				duration = tconv(int(then) - int(data['created']))
-				p.stdin.write('%s\n(%i lines, fetched %s ago)\n%s\n\n' % \
+				p.stdin.write('%s\n(%i paragraphs, fetched %s ago)\n%s\n\n' % \
 					(data['title'].encode("utf-8", "ignore"),
 					len(data['content'].encode("utf-8","ignore").split("\n"))/2+1,
 					duration,

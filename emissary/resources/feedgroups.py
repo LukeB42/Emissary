@@ -4,9 +4,10 @@ from emissary import app, db
 from flask import request
 from sqlalchemy import and_
 from flask.ext import restful
-from emissary.models import FeedGroup
+from emissary.models import FeedGroup, Feed
 from emissary.resources.api_key import auth
 from emissary.controllers.utils import gzipped
+from emissary.controllers.cron import CronError, parse_timings
 
 class FeedGroupCollection(restful.Resource):
 
@@ -57,6 +58,58 @@ class FeedGroupResource(restful.Resource):
 			restful.abort(404)
 		return fg.jsonify()
 
+	@gzipped
+	def put(self, groupname):
+		"""
+		 Create a new feed providing the name and url are unique.
+		 Feeds must be associated with a group.
+		"""
+		key = auth()
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("name",type=str, help="", required=True)
+		parser.add_argument("url",type=str, help="", required=True)
+		parser.add_argument("schedule",type=str, help="", required=True)
+		parser.add_argument("active",type=bool, default=True, help="Feed is active", required=False)
+		args = parser.parse_args()
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			return {"message":"Unknown Feed Group %s" % groupname}, 304
+
+		# Verify the schedule
+		try:
+			parse_timings(args.schedule)
+		except CronError, err:
+			return {"message": err.message}, 500
+
+		# Check the URL isn't already scheduled on this key
+		if [feed for feed in key.feeds if feed.url == args.url]:
+			return {"message": "A feed on this key already exists with this url."}, 500
+
+		# Check the name is unique to this feedgroup
+		if [feed for feed in fg.feeds if feed.name == args.name]:
+			return {"message": "A feed in this group already exists with this name."}, 500
+
+		feed = Feed(name=args.name, url=args.url, schedule=args.schedule, active=args.active)
+
+		# We generally don't want to have objects in this system that don't belong to API keys.
+		fg.feeds.append(feed)
+		key.feeds.append(feed)
+
+		db.session.add(feed)
+		db.session.add(fg)
+		db.session.add(key)
+		db.session.commit()
+
+		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == args.name)).first()
+		if not feed:
+			return {"message":"Error saving feed."}, 304
+
+		# Schedule this feed. 0 here is a response
+		# queue ID (we're not waiting for a reply)
+		app.inbox.put([0, "start", [key,feed.name]])
+		return feed.jsonify(), 201
 
 	@gzipped
 	def post(self, groupname):
@@ -135,7 +188,7 @@ class FeedGroupStop(restful.Resource):
 
 class FeedGroupSearch(restful.Resource):
 
-	def get(self, groupname):
+	def get(self, groupname, terms):
 		key = auth()
 
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()

@@ -73,7 +73,7 @@ class FeedCollection(restful.Resource):
 class FeedResource(restful.Resource):
 
 	@gzipped
-	def get(self, name):
+	def get(self, groupname, name):
 		"""
 		 Review a feed.
 		"""
@@ -85,7 +85,7 @@ class FeedResource(restful.Resource):
 		restful.abort(404)
 
 	@gzipped
-	def post(self, name):
+	def post(self, groupname, name):
 		"""
 		 Modify an existing feed.
 		"""
@@ -134,7 +134,7 @@ class FeedResource(restful.Resource):
 		return feed.jsonify()
 
 	@gzipped
-	def delete(self, name):
+	def delete(self, groupname, name):
 		"""
 		 Halt and delete a feed.
 		 Default to deleting its articles.
@@ -145,6 +145,9 @@ class FeedResource(restful.Resource):
 			restful.abort(404)
 		app.inbox.put([0, "stop", [key, feed.name]])
 		app.log('%s: %s: Deleting feed "%s".' % (feed.key.name, feed.group.name, feed.name))
+		for a in feed.articles:
+			db.session.delete(a)
+
 		db.session.delete(feed)
 		db.session.commit()
 
@@ -152,7 +155,7 @@ class FeedResource(restful.Resource):
 
 class FeedArticleCollection(restful.Resource):
 
-	def get(self, name):
+	def get(self, groupname, name):
 		"""
 		 Review the articles for a specific feed on this key.
 		"""
@@ -187,12 +190,12 @@ class FeedArticleCollection(restful.Resource):
 
 class FeedArticleSearch(restful.Resource):
 
-	def get(self):
+	def get(self, terms):
 		return {}
 
 class FeedStartResource(restful.Resource):
 
-	def post(self, name):
+	def post(self, groupname, name):
 		key = auth()
 
 		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
@@ -203,7 +206,7 @@ class FeedStartResource(restful.Resource):
 
 class FeedStopResource(restful.Resource):
 
-	def post(self, name):
+	def post(self, groupname, name):
 		key = auth()
 
 		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
