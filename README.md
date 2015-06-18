@@ -1,59 +1,99 @@
 Emissary
 ========
 
-Cron for indexing HTTP resources.
+A democracy thing for researchers, programmers and news junkies who want personally curated news archives.
+Emissary is a web content extractor that has a RESTful API and a scripting system.
+Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
 
 --------
 <pre>
-Emissary is a daemon for periodically extracting
-the body text of online articles from sites like news agencies and blogs.
 
-A client library is included to integrate with other programs.
+Installation requires the python interpreter headers, libevent, libxml2 and libxslt headers.
+Optional article compression also requires libsnappy. 
+All of these can be obtained on debian-based systems with:
+sudo apt-get install -y zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent-dev libsnappy-dev
 
-./Emissary --start        (default)
-./Emissary --stop         Stop Emissary immediately.
-./Emissary --restart
-./Emissary --foreground   Don't daemonize.
-./Emissary --logfile      Write output to file.
-./Emissary --debug        Enable debugging output.
-./Emissary --add-user     Add a user to the system.
-./Emissary --interactive  Launch interactive shell.
-./Emissary --run-as       (defaults to the invoking user)
-./Emissary --driver       (defaults to sqlite)
-./Emissary --db           (defaults to ./cache.db)
-./Emissary --address      (defaults to 127.0.0.1)
-./Emissary --port         (defaults to 6362)
+Then you're ready to install the package for all users:
+sudo python setup.py install
 
 
-Add feeds by writing them to a file and then pipe the file into Emissary:
+ Usage: python -m emissary.run <args>
+
+  -h, --help            show this help message and exit
+  -c, --crontab         Crontab to parse
+  --config              (defaults to emissary.config)
+  -a, --address         (defaults to 0.0.0.0)
+  -p, --port            (defaults to 6362)
+  --key                 SSL key file
+  --cert                SSL certificate
+  --pidfile             (defaults to ./emissary.pid)
+  --logfile             (defaults to ./emissary.log)
+  --stop                
+  --debug               Log to stdout
+  -d                    Run in the background
+  --run-as              (defaults to the invoking user)
+  --scripts-dir         (defaults to ./scripts/)
+
+
+Some initial setup has to be done before the system will start.
+Communication with Emissary is mainly done over HTTPS connections
+and for that you're going to need an SSL certificate and a key:
+
+user@host $ openssl genrsa 1024 > key
+user@host $ openssl req -new -x509 -nodes -sha1 -days 365 -key key > cert
+
+To prevent your API keys ever getting put into version control for all
+the world to see, you need to put a database URI into the environment:
+
+export EMISSARY_DATABASE="sqlite://///home/YOUR_USERNAME/.emissary.db"
+
+Protip: Put that last line in your shells' rc file.
+
+Start an instance in the foreground to obtain your first API key:
+
+user@host $ python -m emissary.run --cert cert --key key
+
+14/06/2015 16:31:30 - Emissary - INFO - Starting Emissary 2.0.0.
+e5a59e0a-b457-45c6-9d30-d983419c43e1
+14/06/2015 16:31:31 - Emissary - ERROR - /home/luke/scripts isn't a valid system path.
+14/06/2015 16:31:31 - Emissary - INFO - Primary: Processing feed groups.
+14/06/2015 16:31:31 - Emissary - INFO - Binding to 0.0.0.0:6362
+^C
+That UUID is your Primary API key. Add it to this example crontab:
+
 user@host $ cat feeds.txt
-db_limit 5g
-# url                    name    minute  hour    day month   weekday
-http://feed.tld/rss     'feed'   0       6,12    *   0-11    mon-fri
+apikey: your-api-key-here
 
-user@host $ cat feeds.txt | ./Emissary
-user@host $ ./Emissary --add-user
-user@host $ ./Emissary
-user@host $ ./Emissary --interactive
+# url                                                 name         group     minute  hour    day     month   weekday
+http://news.ycombinator.com/rss                       "HN"         "HN"      15!     *       *       *       *
+http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3!      *       *       *
 
-(3,189) > help
+user@host $ python -m emissary.run -c feeds.txt
+Using API key "Primary".
+Primary: Creating feed group HN.
+Primary: HN: Creating feed "HN"
+Primary: Creating feed group Reuters.
+Primary: Reuters: Creating feed "Reuters UK"
+
+
+Emissary supports multiple apikey directives in one crontab.
+Subsequent feed definitions are associated with the previous key.
+
+Start an instance in the background and connect to it:
+user@host $ python -m emissary.run -d --cert cert --key key
+user@host $ python -m emissary.repl
+Emissary 2.0.0
+Psybernetics 2015
+
+(3,204) > help
+
+Check the included hello.py in the package scripts/ directory
+for hints about post-store scripts.
 </pre>
 
-#### INSTALLATION:
---------
-gevent==1.0
-
-dataset==0.3.14
-
-requests==2.1.0
-
-feedparser==5.1.3
-
-goose-extractor==1.0.6
+If the prospect of creating an NSA profile of your reading habits is
+something that rightfully bothers you then my advice is to subscribe
+to many things and then use Emissary to read the things that really 
+interest you.
 
 
-Debian-based systems may require the following:
-
-sudo aptitude install zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent
-
-sudo pip install lxml BeautifulSoup cssselect feedparser gevent requests sqlalchemy dataset
