@@ -16,10 +16,9 @@ class ArticleCollection(restful.Resource):
 		"""
 		key = auth()
 
-		per_page = 10
-
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("per_page",type=int, help="", required=False, default=10)
 		parser.add_argument("content",type=bool, help="", required=False, default=None)
 		args = parser.parse_args()
 
@@ -32,12 +31,12 @@ class ArticleCollection(restful.Resource):
 		elif args.content == False:
 			return [a.jsonify() for a in \
 					Article.query.filter(and_(Article.key == key, Article.content == None))
-					.order_by(desc(Article.created)).paginate(args.page, per_page).items
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
 			]
 
 		return [a.jsonify() for a in \
 				Article.query.filter(Article.key == key)
-				.order_by(desc(Article.created)).paginate(args.page, per_page).items
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
 		]
 
 	@gzipped

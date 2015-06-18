@@ -2,11 +2,11 @@
 # This file provides the /v1/feedgroups endpoint
 from emissary import app, db
 from flask import request
-from sqlalchemy import and_
 from flask.ext import restful
-from emissary.models import FeedGroup, Feed
+from sqlalchemy import and_, desc
 from emissary.resources.api_key import auth
 from emissary.controllers.utils import gzipped
+from emissary.models import FeedGroup, Feed, Article
 from emissary.controllers.cron import CronError, parse_timings
 
 class FeedGroupCollection(restful.Resource):
@@ -18,7 +18,17 @@ class FeedGroupCollection(restful.Resource):
 		 associated with the requesting API key.
 		"""
 		key = auth()
-		return [fg.jsonify() for fg in key.feedgroups]
+
+		per_page = 10
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("page",type=int, help="", required=False, default=1)
+		args = parser.parse_args()
+
+		return [fg.jsonify() for fg in \
+				FeedGroup.query.filter(FeedGroup.key == key)
+				.order_by(desc(FeedGroup.created)).paginate(args.page, per_page).items
+		]
 
 	@gzipped
 	def put(self):
@@ -148,14 +158,43 @@ class FeedGroupArticles(restful.Resource):
 		"""
 		 Retrieve articles by feedgroup.
 		"""
-
 		key = auth()
 
+		# Summon the group or 404.
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
-		if not fg:
-			restful.abort(404)
+		if not fg: restful.abort(404)
 
-		return {}
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("per_page",type=int, help="", required=False, default=10)
+		parser.add_argument("content",type=bool, help="", required=False, default=None)
+		args = parser.parse_args()
+
+		if args.content == True:
+
+			response = [a.jsonify() for a in \
+				Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.content != None))
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+			]
+			for doc in response:
+				if not doc['content_available']:
+					response.remove(doc)
+			return response
+
+		if args.content == False:
+			return [a.jsonify() for a in \
+				Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.content == None))
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+			]
+
+		return [a.jsonify() for a in \
+			Article.query.filter(
+				Article.feed.has(group=fg))
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+		]
+
 
 class FeedGroupStart(restful.Resource):
 
@@ -189,13 +228,26 @@ class FeedGroupStop(restful.Resource):
 class FeedGroupSearch(restful.Resource):
 
 	def get(self, groupname, terms):
+		"""
+		 Return articles on feeds in this group with our search terms in the title.
+		"""
 		key = auth()
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("per_page",type=int, help="", required=False, default=10)
+#		parser.add_argument("content",type=bool, help="", required=False, default=None)
+		args = parser.parse_args()
 
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:
 			restful.abort(404)
 
-		return {}
+		return [a.jsonify() for a in \
+				Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.title.like("%" + terms + "%")))
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+		]
 
 class FeedGroupCount(restful.Resource):
 

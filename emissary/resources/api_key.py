@@ -23,7 +23,7 @@ class KeyCollection(restful.Resource):
 	@gzipped
 	def get(self):
 		key = auth()
-		response = key.jsonify(feedgroups=True)
+		response = key.jsonify(feedgroups=False)
 
 		if key.name == app.config['MASTER_KEY_NAME'] or key.systemwide:
 			response['system'] = {}
@@ -162,5 +162,5 @@ class KeyResource(restful.Resource):
 			abort(403)
 
 		target =  APIKey.query.filter_by(name=name).first()
-		if target: return target.jsonify(with_objs=True, with_key_str=True)
+		if target: return target.jsonify(feedgroups=True, with_key_str=True)
 		abort(404, message="Unrecognised key.")
