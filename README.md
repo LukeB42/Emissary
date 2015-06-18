@@ -6,6 +6,8 @@ Emissary is a web content extractor that has a RESTful API and a scripting syste
 Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
 
 --------
+![Alt text](doc/emissary3.png?raw=true "Feed Groups")
+![Alt text](doc/emissary2.png?raw=true "Articles")
 <pre>
 
 Installation requires the python interpreter headers, libevent, libxml2 and libxslt headers.
@@ -58,8 +60,7 @@ e5a59e0a-b457-45c6-9d30-d983419c43e1
 14/06/2015 16:31:31 - Emissary - ERROR - /home/luke/scripts isn't a valid system path.
 14/06/2015 16:31:31 - Emissary - INFO - Primary: Processing feed groups.
 14/06/2015 16:31:31 - Emissary - INFO - Binding to 0.0.0.0:6362
-^C
-That UUID is your Primary API key. Add it to this example crontab:
+^That UUID is your Primary API key. Add it to this example crontab:
 
 user@host $ cat feeds.txt
 apikey: your-api-key-here
@@ -95,7 +96,3 @@ If the prospect of creating an NSA profile of your reading habits is
 something that rightfully bothers you then my advice is to subscribe
 to many things and then use Emissary to read the things that really 
 interest you.
-
-
-![Alt text](doc/emissary2.png?raw=true "Articles")
-![Alt text](doc/emissary3.png?raw=true "Feed Groups")
