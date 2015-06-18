@@ -9,11 +9,11 @@ Emissary stores the full text of linked articles from RSS feeds or URLs containi
 <pre>
 
 Installation requires the python interpreter headers, libevent, libxml2 and libxslt headers.
-Optional article compression also requires libsnappy. 
+Optional article compression requires libsnappy. 
 All of these can be obtained on debian-based systems with:
 sudo apt-get install -y zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent-dev libsnappy-dev
 
-Then you're ready to install the package for all users:
+You're then ready to install the package for all users:
 sudo python setup.py install
 
 
@@ -45,7 +45,7 @@ user@host $ openssl req -new -x509 -nodes -sha1 -days 365 -key key > cert
 To prevent your API keys ever getting put into version control for all
 the world to see, you need to put a database URI into the environment:
 
-export EMISSARY_DATABASE="sqlite://///home/YOUR_USERNAME/.emissary.db"
+export EMISSARY_DATABASE="sqlite://///home/you/.emissary.db"
 
 Protip: Put that last line in your shells' rc file.
 
