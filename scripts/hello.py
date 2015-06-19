@@ -30,5 +30,5 @@ if not stat.S_ISFIFO(os.stat(fifo).st_mode):
 # There is also a dictionary named cache, containing the app object.
 # Random aside but through the app object you can access the logging interface and the feed manager.
 fd = open(fifo, "w")
-fd.write("%s: %s\n%s\n" % (article.feed.name, article.title, article.url))
+fd.write("%s: %s\n%s\n" % (feed.name, article.title, article.url))
 fd.close()

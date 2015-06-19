@@ -88,8 +88,8 @@ Psybernetics 2015
 
 (3,204) > help
 
-Check the included hello.py in the package scripts/ directory
-for hints about post-store scripts.
+Check the included hello.py in the scripts/ directory for hints
+about pre-store scripts.
 </pre>
 
 If the prospect of creating an NSA profile of your reading habits is
