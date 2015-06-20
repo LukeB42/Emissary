@@ -26,6 +26,9 @@ seen = {}
 
 def get(url):
 	headers = {"User-Agent": "Emissary "+ app.version}
+
+	if not "://" in url:
+		url = "http://" + url
 	return requests.get(url, headers=headers, verify=False)
 
 # Fetch a feed.url, parse the links, visit the links and store articles.
@@ -47,7 +50,11 @@ def fetch_feed(feed, log):
 	links = parser.extract_links(r)
 	title = None
 	for link in links:
+#		try:
 		fetch_and_store(link, feed, log)
+#		except Exception, e:
+#			log("%s: %s: Error with %s: %s" % \
+#				(feed.key.name, feed.name, link, e.message), "error")
 
 def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	"""
@@ -133,21 +140,23 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		article.ccontent = snappy.compress(article_content.encode("utf-8", "ignore"))
 		article.compressed = True
 
-	# We give articles UIDs manually to ensure unique time data is used.
-	article.uid = uid()
-
-	# Place the article and a feed in the scripts context, 
-	for s in app.scripts.scripts.values():
-		try:
-			s.execute(env={'article':article, 'feed':feed})
-		except Exception, e:
-			log("Error executing %s: %s." % (s.file, e.message), "error")
-
 	commit_to_feed(feed, article)
+
 	now = int(time.time())
 	duration = tconv(now-then)
 	log('%s: %s/%s: Stored %s "%s" (%s)' % \
 		(feed.key.name, feed.group.name, feed.name, article.uid, article.title, duration))
+
+	# We execute scripts here because a failed script could result in a perfectly
+	# fine article going uncomitted if a script were to fail before commit.
+	for s in app.scripts.scripts.values():
+		try:
+			s.execute(env={'article':article, 'feed':feed})
+			article = s['article']
+			log(article)
+		except Exception, e:
+			log("Error executing %s: %s" % (s.file, e.message), "error")
+		log(s.env.keys())
 
 def fetch_article(key):
 	pass
@@ -158,6 +167,8 @@ def commit_to_feed(feed, article):
 	 and commit changes.
 	"""
 
+	# We give articles UIDs manually to ensure unique time data is used.
+	article.uid = uid()
 
 	session = feed._sa_instance_state.session
 	feed.articles.append(article)

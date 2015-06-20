@@ -89,3 +89,6 @@ class Script(object):
             return (self.env[key])
         else:
             raise (KeyError(key))
+
+	def keys(self):
+		return self.env.keys()

@@ -17,6 +17,17 @@ class FeedCollection(restful.Resource):
 		 Review all feeds associated with this key.
 		"""
 		key = auth()
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("per_page",type=int, help="", required=False, default=10)
+		parser.add_argument("content",type=bool, help="", required=False, default=None)
+		args = parser.parse_args()
+
+		return [f.jsonify() for f in \
+				Feed.query.filter(Article.key == key)
+				.order_by(desc(Feed.created)).paginate(args.page, args.per_page).items
+		]
 		
 		return [feed.jsonify() for feed in key.feeds]
 

@@ -21,14 +21,35 @@
 # Many big thanks to God, lord of universes.
 fifo = "/tmp/emissary.pipe"
 
+cache['app'].log(01)
 import os, stat
+cache['app'].log(02)
 if not stat.S_ISFIFO(os.stat(fifo).st_mode):
-	os.mkfifo(fifo)
+	cache['app'].log(03)
+	try:
+		cache['app'].log(04)
+		os.mkfifo(fifo)
+		cache['app'].log(05)
+	except Exception, e:
+		cache['app'].log("Error creating %s: %s" % (fifo, e.message))
+
+cache['app'].log(06)
 
 # Emissary always executes scripts with an article object in the namespace.
 
 # There is also a dictionary named cache, containing the app object.
 # Random aside but through the app object you can access the logging interface and the feed manager.
-fd = open(fifo, "w")
-fd.write("%s: %s\n%s\n" % (feed.name, article.title, article.url))
-fd.close()
+try:
+	cache['app'].log(07)
+	fd = open(fifo, "w")
+	cache['app'].log(08)
+	fd.write("%s: %s\n%s\n" % (feed.name, article.title, article.url))
+	cache['app'].log(09)
+	fd.close()
+except Exception, e:
+	cache['app'].log(010)
+	cache['app'].log("Error writing to %s: %s" % (fifo, e.message))
+
+cache['app'].log(011)
+del fd, os, stat, fifo
+cache['app'].log(012)

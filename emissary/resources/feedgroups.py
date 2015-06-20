@@ -14,20 +14,20 @@ class FeedGroupCollection(restful.Resource):
 	@gzipped
 	def get(self):
 		"""
-		 Return an array of JSON objects for each feed group
-		 associated with the requesting API key.
+		 Paginate an array of feed group representations
+		 associated with the requesting key.
 		"""
 		key = auth()
 
-		per_page = 10
-
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("per_page",type=int, help="", required=False, default=10)
+		parser.add_argument("content",type=bool, help="", required=False, default=None)
 		args = parser.parse_args()
 
 		return [fg.jsonify() for fg in \
 				FeedGroup.query.filter(FeedGroup.key == key)
-				.order_by(desc(FeedGroup.created)).paginate(args.page, per_page).items
+				.order_by(desc(FeedGroup.created)).paginate(args.page, args.per_page).items
 		]
 
 	@gzipped

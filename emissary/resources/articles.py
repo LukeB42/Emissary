@@ -26,7 +26,7 @@ class ArticleCollection(restful.Resource):
 		if args.content == True:
 			return [a.jsonify() for a in \
 					Article.query.filter(and_(Article.key == key, Article.content != None))
-					.order_by(desc(Article.created)).paginate(args.page, per_page).items
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
 			]
 		elif args.content == False:
 			return [a.jsonify() for a in \
