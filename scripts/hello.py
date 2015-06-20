@@ -21,35 +21,24 @@
 # Many big thanks to God, lord of universes.
 fifo = "/tmp/emissary.pipe"
 
-cache['app'].log(01)
 import os, stat
-cache['app'].log(02)
-if not stat.S_ISFIFO(os.stat(fifo).st_mode):
-	cache['app'].log(03)
+if not os.path.exists(fifo):
 	try:
-		cache['app'].log(04)
 		os.mkfifo(fifo)
-		cache['app'].log(05)
 	except Exception, e:
 		cache['app'].log("Error creating %s: %s" % (fifo, e.message))
 
-cache['app'].log(06)
-
-# Emissary always executes scripts with an article object in the namespace.
+# Emissary always executes scripts with an article and its feed in the namespace.
 
 # There is also a dictionary named cache, containing the app object.
 # Random aside but through the app object you can access the logging interface and the feed manager.
 try:
-	cache['app'].log(07)
-	fd = open(fifo, "w")
-	cache['app'].log(08)
-	fd.write("%s: %s\n%s\n" % (feed.name, article.title, article.url))
-	cache['app'].log(09)
-	fd.close()
-except Exception, e:
-	cache['app'].log(010)
-	cache['app'].log("Error writing to %s: %s" % (fifo, e.message))
+	# READER BEWARE: Use non-blocking IO or you won't be storing owt.
+	fd = os.open(fifo, os.O_CREAT | os.O_WRONLY | os.O_NONBLOCK)
+	os.write(fd, "%s: %s\n%s\n" % (feed.name, article.title, article.url))
+	os.close(fd)
+	del fd
+except Exception, e: # Usually due to there not being a reader fd known to the kernel.
+	pass
 
-cache['app'].log(011)
-del fd, os, stat, fifo
-cache['app'].log(012)
+del os, stat, fifo

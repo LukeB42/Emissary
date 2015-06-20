@@ -140,23 +140,26 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		article.ccontent = snappy.compress(article_content.encode("utf-8", "ignore"))
 		article.compressed = True
 
+	# We execute scripts before committing articles to the database
+	# which runs the risk of a singular script halting the entire thing
+	# but in return we get to modify articles (ie machine translation) before storing.
+
+	# Non-blocking IO will result in the most reliable performance within your scripts.
+	for s in app.scripts.scripts.values():
+#		s.compile()
+		try:
+			s.execute(env={'article':article, 'feed':feed})
+			article = s['article']
+		except Exception, e:
+			log("Error executing %s: %s" % (s.file, e.message), "error")
+
 	commit_to_feed(feed, article)
 
 	now = int(time.time())
 	duration = tconv(now-then)
 	log('%s: %s/%s: Stored %s "%s" (%s)' % \
 		(feed.key.name, feed.group.name, feed.name, article.uid, article.title, duration))
-
-	# We execute scripts here because a failed script could result in a perfectly
-	# fine article going uncomitted if a script were to fail before commit.
-	for s in app.scripts.scripts.values():
-		try:
-			s.execute(env={'article':article, 'feed':feed})
-			article = s['article']
-			log(article)
-		except Exception, e:
-			log("Error executing %s: %s" % (s.file, e.message), "error")
-		log(s.env.keys())
+	return
 
 def fetch_article(key):
 	pass
