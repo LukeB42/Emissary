@@ -83,6 +83,7 @@ def init():
 
 	api.add_resource(feeds.FeedResource,             "/feeds/<string:groupname>/<string:name>")
 	api.add_resource(feeds.FeedArticleCollection,    "/feeds/<string:groupname>/<string:name>/articles")
+	api.add_resource(feeds.FeedSearch,               "/feeds/<string:groupname>/<string:name>/search/<string:terms>")
 	api.add_resource(feeds.FeedStartResource,        "/feeds/<string:groupname>/<string:name>/start")
 	api.add_resource(feeds.FeedStopResource,         "/feeds/<string:groupname>/<string:name>/stop")
 

@@ -123,6 +123,8 @@ class FeedGroupResource(restful.Resource):
 
 	@gzipped
 	def post(self, groupname):
+		"Rename a feedgroup or toggle active status"
+
 		key = auth()
 
 		parser = restful.reqparse.RequestParser()

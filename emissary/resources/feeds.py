@@ -187,10 +187,34 @@ class FeedArticleCollection(restful.Resource):
 				.order_by(desc(Article.created)).paginate(args.page, per_page).items
 		]
 
-class FeedArticleSearch(restful.Resource):
+class FeedSearch(restful.Resource):
 
-	def get(self, terms):
-		return {}
+	def get(self, groupname, name, terms):
+		"""
+		Search for articles within a feed.
+		"""
+		key = auth()
+
+		parser = restful.reqparse.RequestParser()
+		parser.add_argument("page",type=int, help="", required=False, default=1)
+		parser.add_argument("per_page",type=int, help="", required=False, default=10)
+#		parser.add_argument("content",type=bool, help="", required=False, default=None)
+		args = parser.parse_args()
+
+		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+		if not fg:
+			restful.abort(404)
+
+		f = [f for f in fg.feeds if f.name == name]
+		if not f: abort(404)
+
+		f = f[0]
+
+		return [a.jsonify() for a in \
+				Article.query.filter(
+					and_(Article.feed == f, Article.title.like("%" + terms + "%")))
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
+		]
 
 class FeedStartResource(restful.Resource):
 
