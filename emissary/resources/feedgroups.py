@@ -129,10 +129,28 @@ class FeedGroupResource(restful.Resource):
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="Rename a feed group",)
-		parser.add_argument("active",type=bool, default=None, help="Stop/restart a group of feeds")
+		parser.add_argument("active",type=bool, default=None)
 		args = parser.parse_args()
 
-		return {}
+		fg = FeedGroup.query.filter(
+				and_(FeedGroup.key == key, FeedGroup.name == groupname)
+			).first()
+		if not fg:
+			restful.abort(404)
+
+		if args.name:
+			if FeedGroup.query.filter(
+				and_(FeedGroup.key == key, FeedGroup.name == args.name)
+			).first():
+				return {"message":"A feed already exists with this name."}, 304
+			fg.name = args.name
+
+		if args.active or args.active == False:
+			fg.active = args.active
+
+		db.session.add(fg)
+		db.session.commit()
+		return fg.jsonify()
 
 	@gzipped
 	def delete(self, groupname):
