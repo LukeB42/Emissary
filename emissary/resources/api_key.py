@@ -101,11 +101,8 @@ class KeyCollection(restful.Resource):
 		if not subject: abort(404)
 
 		if subject.name == app.config['MASTER_KEY_NAME']: abort(403)
-
-		if subject:
-			if args.active        or args.active == False:        subject.active     = args.active
-			if args.systemwide    or args.systemwide == False:    subject.systemwide = args.systemwide
-			if args.global_delete or args.global_delete == False: subject.global_del = args.global_delete
+		if args.active or args.active == False: 
+			subject.active = args.active
 
 			response['key'] = subject.jsonify(with_key_str=True)
 			db.session.add(subject)
@@ -136,20 +133,9 @@ class KeyCollection(restful.Resource):
 		if key.name == app.config['MASTER_KEY_NAME'] and args.key == key.key:
 			abort(403, message="You are attempting to delete the master key.")
 
-		if args.reparent == True and target.systemwide:
-			for u in target.users:
-				if not User.query.filter(and_(User.username == u.username, User.key == None)).first():
-					del u.key
-			for r in target.roles:
-				if not Role.query.filter(and_(Role.name == r.name, Role.key == None)).first():
-					del r.key
-			for p in target.users:
-				if not Priv.query.filter(and_(Priv.name == p.name, Priv.key == None)).first():
-					del p.key
-		else:
-			for fg in target.feedgroups: db.session.delete(fg)
-			for f  in target.feeds:      db.session.delete(f)
-			for a  in target.articles:   db.session.delete(a)
+		for fg in target.feedgroups: db.session.delete(fg)
+		for f  in target.feeds:      db.session.delete(f)
+		for a  in target.articles:   db.session.delete(a)
 
 		db.session.delete(target)
 		db.session.commit()

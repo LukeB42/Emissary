@@ -112,11 +112,14 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 				url=url,
 				title=title,
 			)
+			if not "://" in article.url:
+				article.url = "http://" + article.url
 			commit_to_feed(feed, article)
 			log("%s: %s/%s: Stored %s, reference to %s (%s)" % \
 				(feed.key.name, feed.group.name, feed.name, article.uid, url, document.headers['content-type']))
 			return
 
+	# Document parsing.
 	try:
 		article_content = parser.extract_body(document.text)
 		summary      = parser.summarise(article_content)
@@ -127,11 +130,15 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	if not title:
 		title = parser.extract_title(document.text)
 
+	# Initial article object
 	article = Article(
 		url=url,
 		title=title,
 		summary=summary
 	)
+
+	if not "://" in article.url:
+		article.url = "http://" + article.url
 
 	# Determine whether to store the full content or a compressed copy
 	if not app.config['COMPRESS_ARTICLES']:
@@ -140,13 +147,14 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		article.ccontent = snappy.compress(article_content.encode("utf-8", "ignore"))
 		article.compressed = True
 
+	#
 	# We execute scripts before committing articles to the database
-	# which runs the risk of a singular script halting the entire thing
-	# but in return we get to modify articles (ie machine translation) before storing.
+	# it runs the risk of a singular script halting the entire thing
+	# in return we get to modify articles (ie machine translation) before storing.
 
 	# Non-blocking IO will result in the most reliable performance within your scripts.
+	#
 	for s in app.scripts.scripts.values():
-#		s.compile()
 		try:
 			s.execute(env={'article':article, 'feed':feed})
 			article = s['article']
