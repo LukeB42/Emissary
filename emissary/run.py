@@ -74,7 +74,6 @@ if __name__ == "__main__":
 	parser.add_option("--config", dest="config", action="store", default=None, help="(defaults to emissary.config)")
 	parser.add_option("-a", "--address", dest="address", action="store", default='0.0.0.0', help="(defaults to 0.0.0.0)")
 	parser.add_option("-p", "--port", dest="port", action="store", default='6362', help="(defaults to 6362)")
-	parser.add_option("-i", "--interactive", dest="interactive", action="store_true", default=False, help="Launch interactive console")
 	parser.add_option("--key", dest="key", action="store", default=None, help="SSL key file")
 	parser.add_option("--cert", dest="cert", action="store", default=None, help="SSL certificate")
 	parser.add_option("--pidfile", dest="pidfile", action="store", default="emissary.pid", help="(defaults to ./emissary.pid)")
