@@ -78,8 +78,6 @@ class KeyCollection(restful.Resource):
 		parser.add_argument("key",type=str, help="API Key")
 		parser.add_argument("name",type=str, help="Name associated with the key")
 		parser.add_argument("permit_new", type=bool, help="Determines whether new API keys can be created.")
-		parser.add_argument("systemwide", type=bool, help="Set the systemwide flag on a key.", default=None)
-		parser.add_argument("global_delete", type=bool, help="Determines whether systemwide keys can delete systemwide objects.", default=None)
 		parser.add_argument("active", type=bool, help="Determines whether a key is active or not.", default=None)
 		args = parser.parse_args()
 
@@ -122,7 +120,6 @@ class KeyCollection(restful.Resource):
 
 		parser = reqparse.RequestParser()
 		parser.add_argument("key",type=str, help="API Key")
-		parser.add_argument("reparent", type=bool, help="Reparent local objects to the system.", default=False)
 		args = parser.parse_args()
 
 		target = APIKey.query.filter(APIKey.key == args.key).first()

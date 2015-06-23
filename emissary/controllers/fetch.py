@@ -26,9 +26,6 @@ seen = {}
 
 def get(url):
 	headers = {"User-Agent": "Emissary "+ app.version}
-
-	if not "://" in url:
-		url = "http://" + url
 	return requests.get(url, headers=headers, verify=False)
 
 # Fetch a feed.url, parse the links, visit the links and store articles.
@@ -78,6 +75,10 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		else:
 			log("%s: %s/%s: Already storing %s" % (feed.key.name, feed.group.name,feed.name,url), "debug")
 			return
+
+	# Fix links with no schema
+	if not "://" in url:
+		url = "http://" + url
 
 	# Store our awareness of this url during this run in a globally available dictionary,
 	# in the form [counter, timestamp].
