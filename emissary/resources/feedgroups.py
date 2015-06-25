@@ -14,7 +14,7 @@ class FeedGroupCollection(restful.Resource):
 	@gzipped
 	def get(self):
 		"""
-		 Paginate an array of feed group representations
+		 Paginate an array of feed groups
 		 associated with the requesting key.
 		"""
 		key = auth()

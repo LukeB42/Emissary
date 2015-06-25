@@ -39,25 +39,18 @@ class ArticleCollection(restful.Resource):
 				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
 		]
 
-	@gzipped
-	def put(self):
-		"""
-		 Fetch an article without an associated feed.
-		"""
-		key = auth()
+#	@gzipped
+#	def put(self):
+#		"""
+#		 Fetch an article without an associated feed.
+#		"""
+#		key = auth()
 
-		parser = restful.reqparse.RequestParser()
-		parser.add_argument("feed",type=str, help="", required=True)
-		parser.add_argument("url",type=str, help="", required=True)
-		args = parser.parse_args()
-		return {}, 201
-
-	@gzipped
-	def delete(self):
-		"""
-		 Delete an article.
-		"""
-		return {}
+#		parser = restful.reqparse.RequestParser()
+#		parser.add_argument("feed",type=str, help="", required=True)
+#		parser.add_argument("url",type=str, help="", required=True)
+#		args = parser.parse_args()
+#		return {}, 201
 
 class ArticleSearch(restful.Resource):
 
@@ -129,6 +122,21 @@ class ArticleResource(restful.Resource):
 
 		restful.abort(404)
 
+	@gzipped
+	def delete(self, uid):
+		"""
+		 Delete an article.
+		"""
+		key = auth()
+
+		article = Article.query.filter(and_(Article.key == key, Article.uid == uid)).first()
+		if article:
+			db.session.delete(article)
+			db.session.commit()
+			return {}
+
+		restful.abort(404)
+
 class ArticleCount(restful.Resource):
 
 	def get(self):
@@ -137,3 +145,4 @@ class ArticleCount(restful.Resource):
 		"""
 		key = auth()
 		return len(key.articles)
+
