@@ -191,6 +191,8 @@ Use the environment to store variables by default.</p>
 
 <p><code>--run-as</code> will be required if you&rsquo;re running as root, like in an init script.</p>
 
+<p><code>--scripts-dir</code> defines a directory to use as a root path to load post-receive scripts from. See the <a href="#scripts">Scripts</a> section for more information.</p>
+
 <p><code>--debug</code> produces extra logging messages  and recompiles script files every time they&rsquo;re used.
 This facilitates rapid development of post-receive components.</p>
 
@@ -302,9 +304,13 @@ curl <span class="s2">"https://localhost:6362/v1/feeds"</span> <span class="se">
 
 <p>Sending a <code>GET</code> to <code>/v1/keys</code> will present you with a view of your own key, including its feed groups.</p>
 
+<p><code>/v1/keys</code></p>
+
 <p>If you send a request to this endpoint with a key whose name corresponds with <code>MASTER_KEY_NAME</code>, by default the first key generated,
 the response will include an attribute named system which includes other registered keys and the current state of <code>PERMIT_NEW</code>, which
 determines whether new keys can be anonymously created.</p>
+
+<p><code>/v1/keys/string:name</code></p>
 
 <h2 id="put">PUT</h2>
 <pre class="highlight python"><code><span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s">'name'</span><span class="p">:</span><span class="s">'some user or department'</span><span class="p">}</span>
@@ -318,6 +324,8 @@ determines whether new keys can be anonymously created.</p>
 </code></pre>
 
 <p>Create new keys by telling the service what name you&rsquo;d like.</p>
+
+<p><code>/v1/keys</code></p>
 
 <table><thead>
 <tr>
@@ -337,6 +345,8 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 <h2 id="post">POST</h2>
 
 <p>Update any key but the master key, from the master key.</p>
+
+<p><code>/v1/keys</code></p>
 
 <table><thead>
 <tr>
@@ -383,6 +393,8 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 </pre>
 
 <p>Delete a key and all associated objects.</p>
+
+<p><code>/v1/keys/string:name</code></p>
 
 <table><thead>
 <tr>
@@ -444,9 +456,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
   <span class="s">u'uid'</span><span class="p">:</span> <span class="s">u'MzExMzIzNg'</span><span class="p">}]</span>
 </code></pre>
 
-<p><code>/v1/feeds</code></p>
-
 <p>A paginated resource for reviewing groups of feeds.</p>
+
+<p><code>/v1/feeds</code></p>
 
 <table><thead>
 <tr>
@@ -464,9 +476,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 </tr>
 </tbody></table>
 
-<p><code>/v1/feeds/string:name</code></p>
-
 <p>An individual feed group.</p>
+
+<p><code>/v1/feeds/string:name</code></p>
 
 <h2 id="put">PUT</h2>
 
@@ -482,9 +494,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 }
 </pre>
 
-<p><code>/v1/feeds</code></p>
-
 <p>Create new groups by telling the service what name you&rsquo;d like.</p>
+
+<p><code>/v1/feeds</code></p>
 
 <table><thead>
 <tr>
@@ -498,9 +510,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 </tr>
 </tbody></table>
 
-<p><code>/v1/feeds/string:name</code></p>
-
 <p>Rename or change active status of a feed.</p>
+
+<p><code>/v1/feeds/string:name</code></p>
 
 <table><thead>
 <tr>
@@ -568,6 +580,8 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 
 <p>Delete a feed group and all child objects.</p>
 
+<p><code>/v1/feeds/string:groupname</code></p>
+
 <h2 id="start-and-stop">Start and Stop</h2>
 
 <pre>
@@ -612,6 +626,8 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 
 <p>A paginated view of all articles within a feed group.</p>
 
+<p><code>/v1/feeds/string:groupname/articles</code></p>
+
 <table><thead>
 <tr>
 <th>Parameter</th>
@@ -637,6 +653,8 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 </pre>
 
 <p>Returns an integer count of all articles within a given feed group.</p>
+
+<p><code>/v1/feeds/string:groupname/count</code></p>
 
 <h2 id="search">Search</h2>
 
@@ -665,6 +683,8 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 
 <p>A paginated search resource for feed groups.</p>
 
+<p><code>/v1/feeds/string:groupname/search/string:terms</code></p>
+
 <table><thead>
 <tr>
 <th>Parameter</th>
@@ -685,51 +705,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 
 <h2 id="get">GET</h2>
 
-<blockquote>
-<p>From the REPL</p>
-</blockquote>
+<p>A representation of a known feed.</p>
 
-<pre>
-(3,413) > get feeds?per_page=1
-200
-[
-    {
-        "active": true, 
-        "feeds": [
-            {
-                "group": "MIT Technology Review", 
-                "name": "Technology Review", 
-                "created": 1434286454.0, 
-                "url": "http://www.technologyreview.com/stream/rss", 
-                "schedule": "30 * * * *", 
-                "article_count": 57, 
-                "running": true, 
-                "active": true, 
-                "uid": "NjExNjM5MQ"
-            }
-        ], 
-        "uid": "MzExMzIzNg", 
-        "name": "MIT Technology Review", 
-        "created": 1434286396.0
-    }
-]
-</pre>
-
-<table><thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>per_page</td>
-<td>The amount of feed groups to return (defaults to 10).</td>
-</tr>
-<tr>
-<td>page</td>
-<td>The page number to use (defaults to 1).</td>
-</tr>
-</tbody></table>
+<p><code>/v1/feeds/string:groupname/string:name</code></p>
 
 <h2 id="put">PUT</h2>
 
@@ -752,6 +730,8 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 <p>Feeds are created with a <code>PUT</code> request to an existing feed group.</p>
 
 <p>URLs don&rsquo;t need to be RSS feeds. They can point to any regularly updated collection of links, like the index page of a news site.</p>
+
+<p><code>/v1/feeds/string:groupname</code></p>
 
 <table><thead>
 <tr>
@@ -812,6 +792,10 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 <p>A payload is required as it&rsquo;s a POST request. It doesn&rsquo;t matter what the payload is.</p>
 
 <h2 id="articles">Articles</h2>
+
+<p>A paginated resource for accessing the articles of a specific feed.</p>
+
+<p><code>/v1/feeds/string:groupname/string:name/articles</code></p>
 
 <table><thead>
 <tr>
@@ -896,7 +880,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 
 </code></pre>
 
-<h3 id="url-parameters">URL Parameters</h3>
+<p>A paginated resource for accessing articles pertaining to the requesting key.</p>
+
+<p><code>/v1/articles</code></p>
 
 <table><thead>
 <tr>
@@ -918,11 +904,15 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 </tr>
 </tbody></table>
 
+<h4 id="individual-articles">Individual articles</h4>
+
+<p>See <a href="#retrieving-content">rerieving content</a>.</p>
+
 <h2 id="delete">DELETE</h2>
 
-<p><code>/v1/articles/string:uid</code></p>
-
 <p>Delete an article by ID.</p>
+
+<p><code>/v1/articles/string:uid</code></p>
 
 <h2 id="search">Search</h2>
 
@@ -941,9 +931,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 ]
 </pre>
 
-<p><code>/v1/articles/search/string:terms</code></p>
-
 <p>A paginated resource for searching within the titles of all articles associated with the requesting API key.</p>
+
+<p><code>/v1/articles/search/string:terms</code></p>
 
 <table><thead>
 <tr>
@@ -979,9 +969,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 
 </pre>
 
-<p><code>/v1/articles/string:uid</code></p>
+<p>Retrieve a JSON object containing body content and summary when available.</p>
 
-<p>Retrieve a JSON object containing body content and summary when available and whether a compressed copy is being stored.</p>
+<p><code>/v1/articles/string:uid</code></p>
 
 <h2 id="count">Count</h2>
 
@@ -993,9 +983,9 @@ through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
 (3,411) > 
 </pre>
 
-<p><code>/v1/articles/count</code></p>
-
 <p>A count of all articles associated with the requesting API key.</p>
+
+<p><code>/v1/articles/count</code></p>
 
 <h1 id="scripts">Scripts</h1>
 
@@ -1046,80 +1036,76 @@ This is useful for storing database connections, implementing sampling algorithm
 <span class="k">del</span> <span class="n">fd</span><span class="p">,</span> <span class="n">os</span><span class="p">,</span> <span class="n">stat</span><span class="p">,</span> <span class="n">pipe</span>
 </code></pre>
 
-<p>To achieve ideal performance, perform analysis with a different process.</p>
+<p>Perform analysis with a different process to achieve ideal performance.</p>
 
-<p>Simply use scripts to get the data into the separate process.
+<p>Simply use scripts to get data into separate processes.
 <aside class="warning">Scripts that never finish will hold the whole thing up. Use non-blocking IO.</aside></p>
 
 <h1 id="repl">REPL</h1>
 
-<h3 id="get">GET</h3>
+<p>The REPL (read, eval, print loop) can be used to search and read articles and wraps the HTTP verbs understood by the server.</p>
 
-<h3 id="put">PUT</h3>
+<p>It can be launched with: <code>python -m emissary.repl</code></p>
 
-<h3 id="post">POST</h3>
+<p>The <code>--host</code> option can be used to specify an instance other than <em>https://localhost:6362/v1/</em>.</p>
 
-<h3 id="delete">DELETE</h3>
+<h3 id="setkey">SETKEY</h3>
 
-<h3 id="search">SEARCH</h3>
+<p>Set the active API key.</p>
+
+<p>If a valid database URI is defined in the environment then the REPL will use that to obtain and use the first key it finds when the REPL starts.</p>
+
+<h3 id="getkey">GETKEY</h3>
+
+<p>Display the key string of the currently used key.</p>
 
 <h3 id="read">READ</h3>
 
-          <h1 id="http-status-codes">HTTP Status Codes</h1>
+<pre>
+(5,479) > read MjI5MjIzNw
+</pre>
 
-<aside class="notice">This error section is stored in a separate file in `includes/_errors.md`. Slate allows you to optionally separate out your docs into many files&hellip;just save them to the `includes` folder and add them to the top of your `index.md`&rsquo;s frontmatter. Files are included in the order listed.</aside>
+<p>Pipe article content into <em>/bin/less</em> for reading.</p>
 
-<table><thead>
-<tr>
-<th>Error Code</th>
-<th>Meaning</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>400</td>
-<td>Bad Request &ndash; Your request sucks</td>
-</tr>
-<tr>
-<td>401</td>
-<td>Unauthorized &ndash; Your API key is wrong</td>
-</tr>
-<tr>
-<td>403</td>
-<td>Forbidden &ndash; The kitten requested is hidden for administrators only</td>
-</tr>
-<tr>
-<td>404</td>
-<td>Not Found &ndash; The specified kitten could not be found</td>
-</tr>
-<tr>
-<td>405</td>
-<td>Method Not Allowed &ndash; You tried to access a kitten with an invalid method</td>
-</tr>
-<tr>
-<td>406</td>
-<td>Not Acceptable &ndash; You requested a format that isn&rsquo;t json</td>
-</tr>
-<tr>
-<td>410</td>
-<td>Gone &ndash; The kitten requested has been removed from our servers</td>
-</tr>
-<tr>
-<td>418</td>
-<td>I&rsquo;m a teapot</td>
-</tr>
-<tr>
-<td>429</td>
-<td>Too Many Requests &ndash; You&rsquo;re requesting too many kittens! Slow down!</td>
-</tr>
-<tr>
-<td>500</td>
-<td>Internal Server Error &ndash; We had a problem with our server. Try again later.</td>
-</tr>
-<tr>
-<td>503</td>
-<td>Service Unavailable &ndash; We&rsquo;re temporarially offline for maintanance. Please try again later.</td>
-</tr>
-</tbody></table>
+<p>Use the <code>width</code> command to control the maximum line length.</p>
+
+<h3 id="search">SEARCH</h3>
+
+<pre>
+(5,570) > search internet?per_page=5
+</pre>
+
+<p>A shortcut to <code>GET /v1/articles/search/string:terms</code>.</p>
+
+<h3 id="style">STYLE</h3>
+
+<p>Use the <code>style</code> command to display available Pygments theme is the Pygments package is installed.</p>
+
+<p>Use <code> style themename</code> to change theme.</p>
+
+<h3 id="width">WIDTH</h3>
+
+<p>Used for controlling how the <code>read</code> command pipes articles into the pager.</p>
+
+<p>Use <code>width auto</code> to autodetect the terminal width, or <code>width &lt;integer&gt;</code>.</p>
+
+<p>The default width is 80.</p>
+
+<h3 id="get">GET</h3>
+
+<p>Make <code>GET</code> requests directly.</p>
+
+<h3 id="put">PUT</h3>
+
+<p>Make <code>PUT</code> requests directly.</p>
+
+<h3 id="post">POST</h3>
+
+<p>Make <code>POST</code> requests directly.</p>
+
+<h3 id="delete">DELETE</h3>
+
+<p>Make <code>DELETE</code> requests directly.</p>
 
       </div>
       <div class="dark-box">
