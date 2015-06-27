@@ -1,0 +1,1133 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Emissary 2.0.0 Manual</title>
+
+    <link href="stylesheets/screen.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="stylesheets/print.css" rel="stylesheet" type="text/css" media="print" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+      <script src="javascripts/all.js" type="text/javascript"></script>
+
+      <script>
+        $(function() {
+          setupLanguages(["python","shell"]);
+        });
+      </script>
+  </head>
+
+  <body class="index">
+    <a href="#" id="nav-button">
+      <span>
+        NAV
+        <img src="images/navbar.png" />
+      </span>
+    </a>
+    <div class="tocify-wrapper">
+      <img src="images/logo.png" />
+        <div class="lang-selector">
+              <a href="#" data-language-name="python">python</a>
+              <a href="#" data-language-name="shell">shell</a>
+        </div>
+        <div class="search">
+          <input type="text" class="search" id="input-search" placeholder="Search">
+        </div>
+        <ul class="search-results"></ul>
+      <div id="toc">
+      </div>
+        <ul class="toc-footer">
+            <li><a href='http://github.com/LukeB42/Emissary'>Emissary on Github</a></li>
+            <li><a href='http://src.psybernetics.org'>Psybernetics Open Source</a></li>
+        </ul>
+    </div>
+    <div class="page-wrapper">
+      <div class="dark-box"></div>
+      <div class="content">
+        <h1 id="emissary-manual">Emissary Manual</h1>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="s2">"active"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"article_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">651</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"created"</span><span class="p">:</span><span class="w"> </span><span class="mf">1434517499.0</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"group"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Reuters"</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Reuters UK"</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"running"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"schedule"</span><span class="p">:</span><span class="w"> </span><span class="s2">"15! * * * *"</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"uid"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NjEzNTYwMA"</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://uk.reuters.com"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p>Welcome to the documentation for Emissary and its API.</p>
+
+<p>With minimal fuss and some code examples this guide can help you build a news dataset
+for interrogating at your leisure.</p>
+
+<h2 id="installation">Installation</h2>
+
+<p>If you&rsquo;ve already installed Emissary then feel free to jump to the <a href="#api-reference">API reference</a>.</p>
+
+<p>Some libraries Emissary uses require header files to link in during compilation.</p>
+
+<p>Those are the Python headers, LibEvent, LibXML2, LibXSLT and libsnappy.</p>
+
+<p>All of these can be obtained on Debian-based systems with the following:</p>
+
+<p><code>sudo apt-get install -y zlib1g-dev libxml2-dev libxslt1-dev python-dev libevent-dev libsnappy-dev gcc g++</code></p>
+
+<p>To install Emissary for all users:</p>
+
+<p><code>git clone git://src.psybernetics.org.uk/emissary.git</code></p>
+
+<p><code>cd emissary</code></p>
+
+<p><code>sudo python setup.py install</code></p>
+
+<p>Congratulations, you&rsquo;re now a one-person intelligence agency.</p>
+
+<h2 id="ssl">SSL</h2>
+
+<p>Communicating with the API is done over HTTPS, and for this you&rsquo;ll need a certificate and a key.
+These can be quickly generated with the following two commands:</p>
+
+<p><code>openssl genrsa 1024 &gt; key</code></p>
+
+<p><code>openssl req -new -x509 -nodes -sha1 -days 365 -key key &gt; cert</code></p>
+
+<h2 id="database-uri">Database URI</h2>
+
+<p>Before you can run Emissary a database URI is required in the environment. The reasoning behind this one is to securely keep
+your API keys out of any version-control system you might be using if you&rsquo;re working on Emissary itself.</p>
+
+<p>Quickly export a database URI:</p>
+
+<p><code>export EMISSARY_DATABASE=sqlite://///home/you/.emissary.db</code></p>
+
+<aside class="notice">Put the export command  into your shell&rsquo;s rcfile to save you having to perform it too often.</aside>
+
+<p>Currently accepted connection types are <code>sqlite:////</code>, <code>mysql://</code>, <code>oracle://</code> and <code>postgres://</code>.</p>
+
+<h2 id="your-first-api-key">Your first API key</h2>
+
+<pre>
+user@host $ python -m emissary.run --cert cert --key key
+14/06/2015 16:31:30 - Emissary - INFO - Starting Emissary 2.0.0.
+5a59e0a-b457-45c6-9d30-d983419c43e1
+</pre>
+
+<p>After following the prior steps you&rsquo;re ready to run the server component for the first time.
+This will generate a key based on the name defined in the config as <code>MASTER_KEY_NAME</code>. </p>
+
+<p>The master key can be used to modify other keys on the system and remotely determine whether new keys can be anonymously created. More on that in the <a href="#keys">API Keys</a> section.</p>
+
+<p>You don&rsquo;t have to copy your key in any way or memorise it. Your Primary API key is available from the <a href="#repl">REPL</a> providing it&rsquo;s executed
+with the database URI in the environment.</p>
+
+<p>The <a href="#authenticating">Authenticating</a> section explains how these keys are used to obtain and transmit data.</p>
+
+<h2 id="crontabs">Crontabs</h2>
+
+<pre>
+apikey: your-api-key-here
+
+# url                                                 name         group     minute  hour    day     month   weekday
+http://news.ycombinator.com/rss                       "HN"         "HN"      20!     *       *       *       *
+http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3!      *       *       *
+</pre>
+
+<p>Cron table files can operate on multiple API keys and will create groups and feeds if they don&rsquo;t already exist.</p>
+
+<p>To use a crontab, fire Emissary up with:</p>
+
+<p><code>python -m emissary.run -c crontab</code></p>
+
+<p>For the most part you will probably be creating feeds over the network. The schedule syntax is the same whether you&rsquo;re
+updating a local instance via file or a remote instance in a different country.</p>
+
+<p>The <a href="#feeds">Feeds</a> section details how to create and modify feeds with the REST API.</p>
+
+<h3 id="timing-syntax">Timing syntax</h3>
+
+<pre>
+ minute  hour    day month   weekday
+ 10!     6,12    *   0-11    mon-sun
+ 30      9       20  feb     mon
+ 1       6!      2!  *       *
+</pre>
+
+<p>Examine the example provided to see how schedules can be formed.</p>
+
+<p>The first example would create a feed that is fetched every ten minutes at six in the morning and midday every day of all months.</p>
+
+<p>The second one schedules a feed for half nine on the 20th of Febuary if that day is a Monday.</p>
+
+<aside class="success">Read the source for <code>emissary.controllers.cron.parse_timings</code> to see exactly what&rsquo;s supported.</aside>
+
+<h2 id="command-line-options">Command line options</h2>
+
+<pre>
+Usage: python -m emissary.run [options]
+
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -c, --crontab         Crontab to parse
+  --config              (defaults to emissary.config)
+  -a, --address         (defaults to 0.0.0.0)
+  -p PORT, --port       (defaults to 6362)
+  --key=KEY             SSL key file
+  --cert=CERT           SSL certificate
+  --pidfile             (defaults to ./emissary.pid)
+  --logfile             (defaults to ./emissary.log)
+  --stop                
+  --debug               Log to stdout
+  -d                    Run in the background
+  --run-as              (defaults to the invoking user)
+  --scripts-dir         (defaults to ./scripts/)
+</pre>
+
+<p><code>--config</code> should point to a python file that defines how variables are obtained, from the local environment or a remote server.
+Use the environment to store variables by default.</p>
+
+<p><code>--run-as</code> will be required if you&rsquo;re running as root, like in an init script.</p>
+
+<p><code>--debug</code> produces extra logging messages  and recompiles script files every time they&rsquo;re used.
+This facilitates rapid development of post-receive components.</p>
+
+<h1 id="api-reference">API Reference</h1>
+
+<p>You are reading the manual for Emissary 2.0.0. The current API version is 1.0.</p>
+
+<p>All requests to this API are prefixed with <code>/v1/</code>.</p>
+
+<p>For example <code>/v1/articles/search/string:terms</code>.</p>
+
+<h4 id="quick-reference">Quick Reference</h4>
+
+<table><thead>
+<tr>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>/keys</td>
+<td>Collection of API keys</td>
+</tr>
+<tr>
+<td>/keys/<code>string:name</code></td>
+<td>A specific API key</td>
+</tr>
+<tr>
+<td>/feeds</td>
+<td>A paginated resource for accessing Feed Groups</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code></td>
+<td>A specific Feed Group</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/stop</td>
+<td>Halt the execution of all Feeds in a specific Feed Group</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/start</td>
+<td>Load all feeds in a specific Feed Group</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/articles</td>
+<td>A paginated resource for access all articles in a Feed Group</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/search/<code>string:terms</code></td>
+<td>A paginated resource for searching by title within a Feed Group</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/count</code></td>
+<td>A resource for querying the number of articles within a Feed Group</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/<code>string:name</code></td>
+<td>A specific Feed</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/<code>string:name</code>/articles</td>
+<td>A paginated resource for accessing the articles pertaining to a specific Feed</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/<code>string:name</code>/stop</td>
+<td>Halt the execution of a specific Feed</td>
+</tr>
+<tr>
+<td>/feeds/<code>string:groupname</code>/<code>string:name</code>/start</td>
+<td>Load a specific feed for fetching</td>
+</tr>
+<tr>
+<td>/articles</td>
+<td>A paginated resource for accessing all articles pertaining to the requesting API key</td>
+</tr>
+<tr>
+<td>/articles/<code>string:uid</code></td>
+<td>A specific article including body content and summary</td>
+</tr>
+<tr>
+<td>/articles/search/<code>string:terms</code></td>
+<td>A paginated resource for searching all articles associated with the requesting API key by title</td>
+</tr>
+<tr>
+<td>/articles/count</td>
+<td>A resource for querying the number of articles associated with the requesting API key</td>
+</tr>
+</tbody></table>
+
+<h1 id="authenticating">Authenticating</h1>
+<pre class="highlight shell"><code><span class="c"># Header control with curl</span>
+curl <span class="s2">"https://localhost:6362/v1/feeds"</span> <span class="se">\</span>
+  -kH <span class="s2">"Authorization: Basic your-api-key-here"</span>
+</code></pre>
+<pre class="highlight python"><code><span class="kn">from</span> <span class="nn">emissary.client</span> <span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span> <span class="nn">emissary.models</span> <span class="kn">import</span> <span class="n">APIKey</span>
+<span class="c"># Grab the primary API key</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">APIKey</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="c"># and construct a client with it</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="s">"https://localhost:6362/v1/"</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</code></pre>
+
+<p>Emissary expects an API key to be included in all requests in a header like the following:
+<code class="prettyprint">Authorization: Basic your-api-key-here</code></p>
+
+<h1 id="keys">Keys</h1>
+
+<h2 id="get">GET</h2>
+
+<p>Sending a <code>GET</code> to <code>/v1/keys</code> will present you with a view of your own key, including its feed groups.</p>
+
+<p>If you send a request to this endpoint with a key whose name corresponds with <code>MASTER_KEY_NAME</code>, by default the first key generated,
+the response will include an attribute named system which includes other registered keys and the current state of <code>PERMIT_NEW</code>, which
+determines whether new keys can be anonymously created.</p>
+
+<h2 id="put">PUT</h2>
+<pre class="highlight python"><code><span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s">'name'</span><span class="p">:</span><span class="s">'some user or department'</span><span class="p">}</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s">'keys'</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span>
+<span class="c"># Check for 201 ("CREATED")</span>
+<span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="mi">201</span>
+<span class="c"># Check the contents</span>
+<span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="p">{</span><span class="s">u'active'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">u'apikey'</span><span class="p">:</span> <span class="s">u'12848459-1b59-4ae6-8e63-8718d9a5d399'</span><span class="p">,</span> <span class="s">u'name'</span><span class="p">:</span> <span class="s">u'some user or department'</span><span class="p">}</span>
+</code></pre>
+
+<p>Create new keys by telling the service what name you&rsquo;d like.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>The name of the new key to create</td>
+</tr>
+</tbody></table>
+
+<p>The name must be unique and if <code>PERMIT_NEW</code> is set to <code>False</code> then new keys will only be created
+through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
+
+<h2 id="post">POST</h2>
+
+<p>Update any key but the master key, from the master key.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>key</td>
+<td>The key string</td>
+</tr>
+<tr>
+<td>name</td>
+<td>The name of the key to modify</td>
+</tr>
+<tr>
+<td>permit_new</td>
+<td>Toggle <code>PERMIT_NEW</code></td>
+</tr>
+<tr>
+<td>active</td>
+<td>Toggle whether a key is active</td>
+</tr>
+</tbody></table>
+
+<p>The values for <code>key</code> and <code>name</code> determine which key to operate on when used on their own</p>
+
+<p>If values for both <code>key</code> and <code>name</code> are supplied and no other key exists with the supplied name, then the key will be renamed.</p>
+
+<h2 id="delete">DELETE</h2>
+
+<pre>
+(3,300) > get keys/some user or department
+200
+{
+    "active": true,
+    "apikey": "12848459-1b59-4ae6-8e63-8718d9a5d399",
+    "name": "some user or department",
+    "feedgroups": []
+}
+(3,302) > delete keys key=12848459-1b59-4ae6-8e63-8718d9a5d399
+204
+{}
+</pre>
+
+<p>Delete a key and all associated objects.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>key</td>
+<td>The key string</td>
+</tr>
+</tbody></table>
+
+<h1 id="feed-groups">Feed Groups</h1>
+
+<p>Each feed must exist in a group.</p>
+
+<p>A given url will only permit one feed to be created for it, so think about what groups you&rsquo;ll place your feeds in.</p>
+
+<h2 id="get">GET</h2>
+<pre class="highlight shell"><code><span class="o">(</span>3,731<span class="o">)</span> &gt; get feeds?per_page<span class="o">=</span>1&amp;page<span class="o">=</span>2
+200
+<span class="o">[</span>
+    <span class="o">{</span>
+        <span class="s2">"active"</span>: <span class="nb">true</span>, 
+        <span class="s2">"feeds"</span>: <span class="o">[</span>
+            <span class="o">{</span>
+                <span class="s2">"group"</span>: <span class="s2">"MIT Technology Review"</span>, 
+                <span class="s2">"name"</span>: <span class="s2">"Technology Review"</span>, 
+                <span class="s2">"created"</span>: 1434286454.0, 
+                <span class="s2">"url"</span>: <span class="s2">"http://www.technologyreview.com/stream/rss"</span>, 
+                <span class="s2">"schedule"</span>: <span class="s2">"30 * * * *"</span>, 
+                <span class="s2">"article_count"</span>: 57, 
+                <span class="s2">"running"</span>: <span class="nb">true</span>, 
+                <span class="s2">"active"</span>: <span class="nb">true</span>, 
+                <span class="s2">"uid"</span>: <span class="s2">"NjExNjM5MQ"</span>
+            <span class="o">}</span>
+        <span class="o">]</span>, 
+        <span class="s2">"uid"</span>: <span class="s2">"MzExMzIzNg"</span>, 
+        <span class="s2">"name"</span>: <span class="s2">"MIT Technology Review"</span>, 
+        <span class="s2">"created"</span>: 1434286396.0
+    <span class="o">}</span>
+<span class="o">]</span>
+</code></pre>
+<pre class="highlight python"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">response</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">"feeds?per_page=1&amp;page=2"</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">p</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="p">[{</span><span class="s">u'active'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+  <span class="s">u'created'</span><span class="p">:</span> <span class="mf">1434286396.0</span><span class="p">,</span>
+  <span class="s">u'feeds'</span><span class="p">:</span> <span class="p">[{</span><span class="s">u'active'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+              <span class="s">u'article_count'</span><span class="p">:</span> <span class="mi">57</span><span class="p">,</span>
+              <span class="s">u'created'</span><span class="p">:</span> <span class="mf">1434286454.0</span><span class="p">,</span>
+              <span class="s">u'group'</span><span class="p">:</span> <span class="s">u'MIT Technology Review'</span><span class="p">,</span>
+              <span class="s">u'name'</span><span class="p">:</span> <span class="s">u'Technology Review'</span><span class="p">,</span>
+              <span class="s">u'running'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+              <span class="s">u'schedule'</span><span class="p">:</span> <span class="s">u'30 * * * *'</span><span class="p">,</span>
+              <span class="s">u'uid'</span><span class="p">:</span> <span class="s">u'NjExNjM5MQ'</span><span class="p">,</span>
+              <span class="s">u'url'</span><span class="p">:</span> <span class="s">u'http://www.technologyreview.com/stream/rss'</span><span class="p">}],</span>
+  <span class="s">u'name'</span><span class="p">:</span> <span class="s">u'MIT Technology Review'</span><span class="p">,</span>
+  <span class="s">u'uid'</span><span class="p">:</span> <span class="s">u'MzExMzIzNg'</span><span class="p">}]</span>
+</code></pre>
+
+<p><code>/v1/feeds</code></p>
+
+<p>A paginated resource for reviewing groups of feeds.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>per_page</td>
+<td>The amount of feed groups to return (defaults to 10).</td>
+</tr>
+<tr>
+<td>page</td>
+<td>The page number to use (defaults to 1).</td>
+</tr>
+</tbody></table>
+
+<p><code>/v1/feeds/string:name</code></p>
+
+<p>An individual feed group.</p>
+
+<h2 id="put">PUT</h2>
+
+<pre>
+(3,584) > put feeds name="A group"
+201
+{
+    "active": true, 
+    "feeds": [], 
+    "uid": "MjE2MTg3Mg", 
+    "name": "A group", 
+    "created": 1435120617.0
+}
+</pre>
+
+<p><code>/v1/feeds</code></p>
+
+<p>Create new groups by telling the service what name you&rsquo;d like.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>The name of the new group to create</td>
+</tr>
+</tbody></table>
+
+<p><code>/v1/feeds/string:name</code></p>
+
+<p>Rename or change active status of a feed.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>The name of the new group to create</td>
+</tr>
+<tr>
+<td>active</td>
+<td>Toggle whether a group is active</td>
+</tr>
+</tbody></table>
+
+<h2 id="post">POST</h2>
+
+<pre>
+(3,863) > post feeds/The%20Grauniad name="The Guardian"
+200
+{
+    "active": true, 
+    "feeds": [
+        {
+            "group": "The Guardian", 
+            "name": "The Guardian", 
+            "created": 1434282329.0, 
+            "url": "http://guardian.co.uk/", 
+            "schedule": "10! * * * *", 
+            "article_count": 1540, 
+            "running": true,
+            "active": true, 
+            "uid": "MDQ0OTczMQ"
+        }
+    ], 
+    "uid": "NjQ0NTg4Mw", 
+    "name": "The Guardian", 
+    "created": 1434282292.0
+}
+</pre>
+
+<p>Rename a group or toggle whether it&rsquo;s active.</p>
+
+<p><code>/v1/feeds/string:name</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>A unique name to rename the group to</td>
+</tr>
+<tr>
+<td>status</td>
+<td>A boolean flag that determines whether the scheduler ignores feeds in the group</td>
+</tr>
+</tbody></table>
+
+<h2 id="delete">DELETE</h2>
+
+<p>Delete a feed group and all child objects.</p>
+
+<h2 id="start-and-stop">Start and Stop</h2>
+
+<pre>
+(4,171) > post feeds/Reuters/stop 1=1
+200
+{}
+
+(4,171) > get feeds/Reuters
+200
+{
+    "active": true, 
+    "feeds": [
+        {
+            "group": "Reuters", 
+            "name": "Reuters UK", 
+            "created": 1434517499.0, 
+            "url": "http://uk.reuters.com", 
+            "schedule": "15! * * * *", 
+            "article_count": 1485, 
+            "running": false, 
+            "active": true, 
+            "uid": "NjEzNTYwMA"
+        }
+    ], 
+    "uid": "NjU4NTc0Mw", 
+    "name": "Reuters", 
+    "created": 1434220040.0
+}
+</pre>
+
+<p>Start or stop all feeds in a group.</p>
+
+<p>A payload is required as it&rsquo;s a POST request. It doesn&rsquo;t matter what the payload is.</p>
+
+<h3 id="post">POST</h3>
+
+<p><code>/v1/feeds/string:name/start</code></p>
+
+<p><code>/v1/feeds/string:name/stop</code></p>
+
+<h2 id="articles">Articles</h2>
+
+<p>A paginated view of all articles within a feed group.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>per_page</td>
+<td>The amount of feed groups to return (defaults to 10).</td>
+</tr>
+<tr>
+<td>page</td>
+<td>The page number to use (defaults to 1).</td>
+</tr>
+</tbody></table>
+
+<h2 id="count">Count</h2>
+
+<pre>
+(3,302) > get feeds/HN/count
+200
+844
+</pre>
+
+<p>Returns an integer count of all articles within a given feed group.</p>
+
+<h2 id="search">Search</h2>
+
+<pre>
+(3,362) > get feeds/HN/search/quant?per_page=2
+200
+[
+    {
+        "feed": "HN", 
+        "uid": "MDU0MDI2Mw", 
+        "title": "The Quantum Thermodynamic Revolution", 
+        "url": "http://fqxi.org/community/articles/display/202", 
+        "created": 1434897307.0, 
+        "content_available": true
+    }, 
+    {
+        "feed": "HN", 
+        "uid": "NjM2NTk0NQ", 
+        "title": "Quantum Python: Animating the Schrodinger Equation", 
+        "url": "https://jakevdp.github.io/blog/2012/09/05/quantum-python/", 
+        "created": 1434834124.0, 
+        "content_available": true
+    }
+]
+</pre>
+
+<p>A paginated search resource for feed groups.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>per_page</td>
+<td>The amount of feed groups to return (defaults to 10).</td>
+</tr>
+<tr>
+<td>page</td>
+<td>The page number to use (defaults to 1).</td>
+</tr>
+</tbody></table>
+
+<h1 id="feeds">Feeds</h1>
+
+<h2 id="get">GET</h2>
+
+<blockquote>
+<p>From the REPL</p>
+</blockquote>
+
+<pre>
+(3,413) > get feeds?per_page=1
+200
+[
+    {
+        "active": true, 
+        "feeds": [
+            {
+                "group": "MIT Technology Review", 
+                "name": "Technology Review", 
+                "created": 1434286454.0, 
+                "url": "http://www.technologyreview.com/stream/rss", 
+                "schedule": "30 * * * *", 
+                "article_count": 57, 
+                "running": true, 
+                "active": true, 
+                "uid": "NjExNjM5MQ"
+            }
+        ], 
+        "uid": "MzExMzIzNg", 
+        "name": "MIT Technology Review", 
+        "created": 1434286396.0
+    }
+]
+</pre>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>per_page</td>
+<td>The amount of feed groups to return (defaults to 10).</td>
+</tr>
+<tr>
+<td>page</td>
+<td>The page number to use (defaults to 1).</td>
+</tr>
+</tbody></table>
+
+<h2 id="put">PUT</h2>
+
+<pre>
+(3,819) > put feeds/BBC%20News name="BBC News" schedule="50 * * * *" url=http://news.bbc.co.uk/
+201
+{
+    "group": "BBC News", 
+    "name": "BBC News", 
+    "created": 1435122353.0, 
+    "url": "http://news.bbc.co.uk", 
+    "schedule": "50 * * * *", 
+    "article_count": 0, 
+    "running": null, 
+    "active": true, 
+    "uid": "NjgyNjE2MQ"
+}
+</pre>
+
+<p>Feeds are created with a <code>PUT</code> request to an existing feed group.</p>
+
+<p>URLs don&rsquo;t need to be RSS feeds. They can point to any regularly updated collection of links, like the index page of a news site.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>The name of the new feed</td>
+</tr>
+<tr>
+<td>url</td>
+<td>The url for the new feed</td>
+</tr>
+<tr>
+<td>schedule</td>
+<td>The schedule for fetching this new feed on</td>
+</tr>
+<tr>
+<td>active</td>
+<td>Boolean flag that determines whether the scheduler ignores this feed (default: True)</td>
+</tr>
+</tbody></table>
+
+<aside class="warning">URLs must be unique to your API key. You can&rsquo;t schedule the same URL for multiple feeds.</aside>
+
+<h2 id="delete">DELETE</h2>
+
+<p><code>/v1/feeds/string:name</code></p>
+
+<p>Delete a feed and all associated articles.</p>
+
+<h2 id="start-and-stop">Start and Stop</h2>
+
+<pre>
+(4,741) > post feeds/HN/HN/stop 1=1
+200
+{
+    "group": "HN", 
+    "name": "HN", 
+    "created": 1434214772.0, 
+    "url": "http://news.ycombinator.com/rss", 
+    "schedule": "2! * * * *", 
+    "article_count": 1018, 
+    "running": false, 
+    "active": true, 
+    "uid": "NDIyNDM0Mg"
+}
+</pre>
+
+<p><code>/v1/feeds/string:groupname/string:name/start</code></p>
+
+<p><code>/v1/feeds/string:groupname/string:name/stop</code></p>
+
+<p>Start or stop a feed.</p>
+
+<p>A payload is required as it&rsquo;s a POST request. It doesn&rsquo;t matter what the payload is.</p>
+
+<h2 id="articles">Articles</h2>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>per_page</td>
+<td>The amount of article items to return (defaults to 10).</td>
+</tr>
+<tr>
+<td>page</td>
+<td>The page number to use (defaults to 1).</td>
+</tr>
+</tbody></table>
+
+<h1 id="articles">Articles</h1>
+
+<h2 id="get">GET</h2>
+<pre class="highlight python"><code><span class="kn">from</span> <span class="nn">emissary.client</span> <span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span> <span class="nn">emissary.models</span> <span class="kn">import</span> <span class="n">APIKey</span>
+<span class="c"># Grab the primary API key</span>
+<span class="n">key</span> <span class="o">=</span> <span class="n">APIKey</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="c"># and construct a client object with it</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="s">"https://localhost:6362/v1/"</span><span class="p">,</span> <span class="n">verify</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+<span class="c"># Get the last article with content</span>
+<span class="n">articles</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">'articles?content=1&amp;per_page=1'</span><span class="p">)</span>
+
+<span class="c"># articles is now a tuple containing a dictionary of results and the response status</span>
+
+<span class="c"># HTTP status code</span>
+<span class="n">articles</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="mi">200</span>
+<span class="c"># Construct a pretty printing function</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">pprint</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">()</span>
+<span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">pprint</span>
+
+<span class="c"># Review what we got</span>
+<span class="n">p</span><span class="p">(</span><span class="n">articles</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="p">[{</span><span class="s">u'content_available'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+  <span class="s">u'created'</span><span class="p">:</span> <span class="mf">1434230465.0</span><span class="p">,</span>
+  <span class="s">u'feed'</span><span class="p">:</span> <span class="s">u'HN'</span><span class="p">,</span>
+  <span class="s">u'title'</span><span class="p">:</span> <span class="s">u'Interprocess Communication in the Ninth Edition Unix System (1990)'</span><span class="p">,</span>
+  <span class="s">u'uid'</span><span class="p">:</span> <span class="s">u'MjQzMTcxMw'</span><span class="p">,</span>
+  <span class="s">u'url'</span><span class="p">:</span> <span class="s">u'http://cm.bell-labs.co/who/dmr/ipcpaper.html'</span><span class="p">}]</span>
+
+<span class="c"># Get article by UID</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">"articles/MjQzMTcxMw"</span><span class="p">)</span>
+
+</code></pre>
+<pre class="highlight shell"><code>curl <span class="s2">"https://localhost:6362/v1/articles?page=50&amp;per_page=3"</span> <span class="se">\</span>
+ -kH <span class="s2">"Authorization: Basic your-api-key-here"</span>
+<span class="o">[</span>
+    <span class="o">{</span>
+        <span class="s2">"content_available"</span>: <span class="nb">true</span>, 
+        <span class="s2">"created"</span>: 1434991810.0, 
+        <span class="s2">"feed"</span>: <span class="s2">"The Guardian"</span>, 
+        <span class="s2">"title"</span>: <span class="s2">"Nina Simone: 'Are you ready to burn buildings?'"</span>, 
+        <span class="s2">"uid"</span>: <span class="s2">"MDQ3MDMxNg"</span>, 
+        <span class="s2">"url"</span>: <span class="s2">"http://www.theguardian.com/music/2015/jun/22/nina-simone-documentary-what-happened-miss-simone"</span>
+    <span class="o">}</span>, 
+    <span class="o">{</span>
+        <span class="s2">"content_available"</span>: <span class="nb">true</span>, 
+        <span class="s2">"created"</span>: 1434991809.0, 
+        <span class="s2">"feed"</span>: <span class="s2">"The Guardian"</span>, 
+        <span class="s2">"title"</span>: <span class="s2">"Airbnb and Uber</span><span class="se">\u</span><span class="s2">2019s sharing economy is one route to dotcommunism"</span>, 
+        <span class="s2">"uid"</span>: <span class="s2">"NTQxNTEwOQ"</span>, 
+        <span class="s2">"url"</span>: <span class="s2">"http://www.theguardian.com/commentisfree/2015/jun/21/airbnb-uber-sharing-economy-dotcommunism-economy"</span>
+    <span class="o">}</span>, 
+    <span class="o">{</span>
+        <span class="s2">"content_available"</span>: <span class="nb">true</span>, 
+        <span class="s2">"created"</span>: 1434991808.0, 
+        <span class="s2">"feed"</span>: <span class="s2">"The Guardian"</span>, 
+        <span class="s2">"title"</span>: <span class="s2">"Accademia della Crusca: saving Italian one bastardised word at a time"</span>, 
+        <span class="s2">"uid"</span>: <span class="s2">"MTIxMDUyOA"</span>, 
+        <span class="s2">"url"</span>: <span class="s2">"http://www.theguardian.com/world/shortcuts/2015/jun/22/accademia-della-crusca-rescuing-beauty-italian"</span>
+    <span class="o">}</span>
+<span class="o">]</span>
+
+</code></pre>
+
+<h3 id="url-parameters">URL Parameters</h3>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>per_page</td>
+<td>The amount of article items to return (defaults to 10).</td>
+</tr>
+<tr>
+<td>page</td>
+<td>The page number to use (defaults to 1).</td>
+</tr>
+<tr>
+<td>content</td>
+<td>A an optional boolean denoting whether to return only items with or without body content.</td>
+</tr>
+</tbody></table>
+
+<h2 id="delete">DELETE</h2>
+
+<p><code>/v1/articles/string:uid</code></p>
+
+<p>Delete an article by ID.</p>
+
+<h2 id="search">Search</h2>
+
+<pre>
+(3,408) > get articles/search/electricity?per_page=1
+200
+[
+    {
+        "feed": "HN", 
+        "uid": "MTg3MDU3Mw", 
+        "title": "The Way Humans Get Electricity Is About to Change Forever", 
+        "url": "http://www.bloomberg.com/news/articles/2015-06-23/the-way-humans-get-electricity-is-about-to-change-forever", 
+        "created": 1435075690.0, 
+        "content_available": true
+    }
+]
+</pre>
+
+<p><code>/v1/articles/search/string:terms</code></p>
+
+<p>A paginated resource for searching within the titles of all articles associated with the requesting API key.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>per_page</td>
+<td>The amount of article items to return (defaults to 10).</td>
+</tr>
+<tr>
+<td>page</td>
+<td>The page number to use (defaults to 1).</td>
+</tr>
+</tbody></table>
+
+<h2 id="retrieving-content">Retrieving content</h2>
+
+<pre>
+(3,408) > get articles/MTg3MDU3Mw
+200
+{
+    "feed": "HN", 
+    "uid": "MTg3MDU3Mw", 
+    "title": "The Way Humans Get Electricity Is About to Change Forever", 
+    "url": "http://www.bloomberg.com/news/articles/2015-06-23/the-way-humans-get-electricity-is-about-to-change-forever", 
+    "created": 1435075690.0, 
+    "summary": "The renewable-energy boom is here. Trillions of dollars will be invested over the next 25 years, driving some of the most profound changes yet in how humans get their electricity. That's according [redacted for this documentation]",
+    "content": "The renewable-energy\u00a0boom is here. Trillions of dollars will be invested over\u00a0the next 25 years, driving some of the most profound changes yet in how humans get their electricity. That's[redacted for this documentation]",
+    "compressed": true
+}
+
+</pre>
+
+<p><code>/v1/articles/string:uid</code></p>
+
+<p>Retrieve a JSON object containing body content and summary when available and whether a compressed copy is being stored.</p>
+
+<h2 id="count">Count</h2>
+
+<pre>
+(3,408) > get articles/count
+200
+3411
+
+(3,411) > 
+</pre>
+
+<p><code>/v1/articles/count</code></p>
+
+<p>A count of all articles associated with the requesting API key.</p>
+
+<h1 id="scripts">Scripts</h1>
+
+<blockquote>
+<p>Send SIGHUP to the master process to reload your scripts</p>
+</blockquote>
+
+<pre>
+user@host $ ps faux|grep emissary
+user     26303 24.3  2.1 200000 84908 pts/2  Rl+  20:04   0:01  \_ emissary
+user     26308  0.0  0.8 150488 33844 pts/2  Sl+  20:04   0:00     \_ emissary
+user@host $ kill -1 26303
+22/06/2015 20:04:48 - Emissary - INFO - Reloading scripts.
+</pre>
+
+<p>Emissary can compile Python files and then run its own instance of the Python runtime over these objects.</p>
+
+<p>This is done for each loadable script in the directory passed to the <code>--scripts-dir</code> parameter for every article
+extracted, just before it&rsquo;s committed to the backend database. </p>
+
+<p>Your scripts can always expect the presence of three objects: <code>feed</code>, <code>article</code> and <code>cache</code>.</p>
+
+<p><code>feed</code>is the model of the feed that the <code>article</code> will be stored within.</p>
+
+<p><code>article</code> is the model of the article that has just been retrieved.
+Modifying its attributes changes what&rsquo;s passed to subsequent scripts and ultimately what&rsquo;s committed to the database.
+This is a good place to perform language detection and translation.</p>
+
+<p><code>cache</code> is a dictionary that will be passed unmodified to subsequent runs of your script.
+If you insert a new key/value pair into this dictionary they&rsquo;ll be available again the next time your script is called.
+This is useful for storing database connections, implementing sampling algorithms and growing algebraic data structures.</p>
+
+<p>By default the <code>cache</code> dictionary contains a reference to the internal <code>app</code> object, where the logging interface can be accessed via
+<code>app.log</code> and the feed manager can be spoken to via <code>app.inbox</code>.</p>
+
+<p>You&rsquo;re invited to read the source code for Emissary to gain a brighter insight into how the feed manager works.</p>
+
+<h2 id="composing-extensible-systems">Composing extensible systems</h2>
+<pre class="highlight python"><code><span class="c"># Write new article data to a named pipe</span>
+<span class="n">pipe</span> <span class="o">=</span> <span class="s">"/tmp/emissary.pipe"</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">stat</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">mkfifo</span><span class="p">(</span><span class="n">pipe</span><span class="p">)</span>
+
+<span class="n">fd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="nb">open</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">O_WRONLY</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">O_NONBLOCK</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="s">"</span><span class="si">%</span><span class="s">s: </span><span class="si">%</span><span class="s">s</span><span class="se">\n</span><span class="si">%</span><span class="s">s</span><span class="se">\n</span><span class="s">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">feed</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">article</span><span class="o">.</span><span class="n">url</span><span class="p">))</span>
+<span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+<span class="k">del</span> <span class="n">fd</span><span class="p">,</span> <span class="n">os</span><span class="p">,</span> <span class="n">stat</span><span class="p">,</span> <span class="n">pipe</span>
+</code></pre>
+
+<p>To achieve ideal performance, perform analysis with a different process.</p>
+
+<p>Simply use scripts to get the data into the separate process.
+<aside class="warning">Scripts that never finish will hold the whole thing up. Use non-blocking IO.</aside></p>
+
+<h1 id="repl">REPL</h1>
+
+<h3 id="get">GET</h3>
+
+<h3 id="put">PUT</h3>
+
+<h3 id="post">POST</h3>
+
+<h3 id="delete">DELETE</h3>
+
+<h3 id="search">SEARCH</h3>
+
+<h3 id="read">READ</h3>
+
+          <h1 id="http-status-codes">HTTP Status Codes</h1>
+
+<aside class="notice">This error section is stored in a separate file in `includes/_errors.md`. Slate allows you to optionally separate out your docs into many files&hellip;just save them to the `includes` folder and add them to the top of your `index.md`&rsquo;s frontmatter. Files are included in the order listed.</aside>
+
+<table><thead>
+<tr>
+<th>Error Code</th>
+<th>Meaning</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>400</td>
+<td>Bad Request &ndash; Your request sucks</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Unauthorized &ndash; Your API key is wrong</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Forbidden &ndash; The kitten requested is hidden for administrators only</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Not Found &ndash; The specified kitten could not be found</td>
+</tr>
+<tr>
+<td>405</td>
+<td>Method Not Allowed &ndash; You tried to access a kitten with an invalid method</td>
+</tr>
+<tr>
+<td>406</td>
+<td>Not Acceptable &ndash; You requested a format that isn&rsquo;t json</td>
+</tr>
+<tr>
+<td>410</td>
+<td>Gone &ndash; The kitten requested has been removed from our servers</td>
+</tr>
+<tr>
+<td>418</td>
+<td>I&rsquo;m a teapot</td>
+</tr>
+<tr>
+<td>429</td>
+<td>Too Many Requests &ndash; You&rsquo;re requesting too many kittens! Slow down!</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Internal Server Error &ndash; We had a problem with our server. Try again later.</td>
+</tr>
+<tr>
+<td>503</td>
+<td>Service Unavailable &ndash; We&rsquo;re temporarially offline for maintanance. Please try again later.</td>
+</tr>
+</tbody></table>
+
+      </div>
+      <div class="dark-box">
+          <div class="lang-selector">
+                <a href="#" data-language-name="python">python</a>
+                <a href="#" data-language-name="shell">shell</a>
+          </div>
+      </div>
+    </div>
+  </body>
+</html>
