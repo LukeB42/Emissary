@@ -104,7 +104,7 @@ if __name__ == "__main__":
 		pid = None
 		try:
 			f = file(options.pidfile, 'r')
-			pid = int(f.readline())
+			pids = f.readline().split()
 			f.close()
 			os.unlink(options.pidfile)
 		except ValueError, e:   
@@ -112,9 +112,10 @@ if __name__ == "__main__":
 			sys.exit(-1)
 		except IOError, e:
 			pass
-		if pid:
-			os.kill(pid, 15)
-			print "Killed process with ID %i." % pid
+		if pids:
+			for pid in pids:
+				os.kill(int(pid), 15)
+				print "Killed process with ID %s." % pid
 		else:
 			sys.stderr.write('Emissary not running or no PID file found\n')
 		sys.exit(0)
@@ -190,7 +191,7 @@ if __name__ == "__main__":
 
 	if options.daemonise:
 		f = file(options.pidfile, 'a')
-		f.write(' %i' % p.pid)
+		f.write(' %i' % httpd_process.pid)
 		f.close()
 
 	try:
