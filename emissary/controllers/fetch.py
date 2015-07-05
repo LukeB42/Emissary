@@ -68,7 +68,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		title = None
 
 	# Skip this url if we've already extracted and stored it for this feed, unless we're overwriting.
-	if Article.query.filter(and_(Article.url == url), Article.feed == feed).first():
+	if Article.query.filter(and_(Article.url == url, Article.feed == feed)).first():
 		if overwrite:
 			log("%s: %s/%s: Preparing to overwrite existing copy of %s" % \
 				(feed.key.name, feed.group.name,feed.name,url), "debug")
@@ -128,8 +128,15 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		log("%s: %s: Error parsing %s: %s" % (feed.key.name, feed.group.name, url, e.message))
 		return
 
+	# Ensure a title and disregard dupes
 	if not title:
 		title = parser.extract_title(document.text)
+
+	if app.config['NO_DUPLICATE_TITLES']:
+		if Article.query.filter(
+			and_(Article.title == title, Article.key == feed.key)
+		).first():
+			return
 
 	# Initial article object
 	article = Article(
@@ -137,9 +144,6 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
 		title=title,
 		summary=summary
 	)
-
-	if not "://" in article.url:
-		article.url = "http://" + article.url
 
 	# Determine whether to store the full content or a compressed copy
 	if not app.config['COMPRESS_ARTICLES']:
