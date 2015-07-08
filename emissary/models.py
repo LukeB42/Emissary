@@ -8,47 +8,14 @@ import time
 import snappy
 from uuid import uuid4
 from emissary import db, app
-import sqlalchemy.types as types
-from multiprocessing import Queue, Manager
+from multiprocessing import Queue
 from emissary.controllers.utils import uid
-# 
-#       /--Subprocesses for checking feed timing data
-# hermes
-#       \_ REST service
-#
-# Start
-# Divide feeds between workers
-# process control
-# Check if the timings have changed after each fetch.
-#
 
-snappy = None
 if app.config['COMPRESS_ARTICLES']:
 	try:
 		import snappy
 	except ImportError:
-		pass
-
-class TransparentCompression(types.TypeDecorator):
-	impl = types.String
-	
-	def load_dialect_impl(self, dialect):
-		return dialect.type_descriptor(types.String(convert_unicode=False))
-
-	def process_bind_param(self, value, dialect):
-		app.log(dir(self))
-		if value and snappy:
-			value = snappy.compress(value.encode("utf-8", "ignore"))
-		return value
-    
-	def process_result_value(self, value, dialect):
-		if value and snappy:
-			value = snappy.decompress(value)
-		return value
-    
-	def copy(self):
-		return TransparentCompression(self.impl.length)
-
+		snappy = None
 
 class APIKey(db.Model):
 	__tablename__ = 'api_keys'
