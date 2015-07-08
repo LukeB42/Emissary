@@ -175,8 +175,15 @@ class Article(db.Model):
 	created    = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	compressed = db.Column(db.Boolean(), default=False)
 
-	def __repr__(self):
+	def text(self):
 		if self.content:
+			return self.content.decode("utf-8", "ignore")
+		if self.ccontent:
+			return snappy.decompress(self.ccontent).decode("utf-8", "ignore")
+		return ""
+
+	def __repr__(self):
+		if self.content or self.ccontent:
 			return '<Article "%s">' % self.title.encode("utf-8", "ignore")
 		if self.url and self.title:
 			return "<Article reference to %s>" % self.title.encode("utf-8", "ignore")
