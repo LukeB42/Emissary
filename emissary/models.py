@@ -11,12 +11,6 @@ from emissary import db, app
 from multiprocessing import Queue
 from emissary.controllers.utils import uid
 
-if app.config['COMPRESS_ARTICLES']:
-	try:
-		import snappy
-	except ImportError:
-		snappy = None
-
 class APIKey(db.Model):
 	__tablename__ = 'api_keys'
 	id         = db.Column(db.Integer, primary_key=True)
@@ -27,7 +21,7 @@ class APIKey(db.Model):
 	feedgroups = db.relationship("FeedGroup", backref="key")
 	feeds      = db.relationship("Feed", backref="key")
 	articles   = db.relationship("Article", backref="key")
-	events = db.relationship("Event", backref="key")
+	events     = db.relationship("Event", backref="key")
 
 	def generate_key_str(self):
 		return str(uuid4())
@@ -101,7 +95,7 @@ class Feed(db.Model):
 		qid = hex(id(response_queue))
 		app.inbox.put([qid, "check", self])
 
-		# Wait two seconds max for a response
+		# Wait somewhere around 500ms max for a response
 		then = time.time()
 		while response_queue.empty():
 			now = time.time()
@@ -113,14 +107,14 @@ class Feed(db.Model):
 	def jsonify(self, articles=False):
 		response = {}
 		if self.created:
-			response['name'] = self.name
-			response['uid'] = self.uid
-			response['url'] = self.url
-			response['created'] = time.mktime(self.created.timetuple())
-			response['schedule'] = self.schedule
-			response['active'] = self.active
+			response['name']          = self.name
+			response['uid']           = self.uid
+			response['url']           = self.url
+			response['created']       = time.mktime(self.created.timetuple())
+			response['schedule']      = self.schedule
+			response['active']        = self.active
 			response['article_count'] = len(self.articles)
-			response['running'] = self.is_running()
+			response['running']       = self.is_running()
 		if self.group:
 			response['group'] = self.group.name
 		else:
@@ -159,14 +153,14 @@ class Article(db.Model):
 	def jsonify(self, summary=False, content=False):
 		response = {}
 		if self.title:
-			response['title'] = self.title.encode("utf-8", "ignore")
-			response['url'] = self.url.encode("utf-8", "ignore")
-			response['uid'] = self.uid
-			response['created'] = time.mktime(self.created.timetuple())
+			response['title']       = self.title.encode("utf-8", "ignore")
+			response['url']         = self.url.encode("utf-8", "ignore")
+			response['uid']         = self.uid
+			response['created']     = time.mktime(self.created.timetuple())
 		if self.feed:
-			response['feed'] = self.feed.name
+			response['feed']        = self.feed.name
 		if content:
-			response['compressed'] = self.compressed
+			response['compressed']  = self.compressed
 			if self.ccontent:
 				response['content'] = snappy.decompress(self.ccontent)
 			else:
@@ -182,8 +176,8 @@ class Article(db.Model):
 
 class Event(db.Model):
 	__tablename__ = "events"
-	id = db.Column(db.Integer(), primary_key=True)
-	key_id = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
+	id      = db.Column(db.Integer(), primary_key=True)
+	key_id  = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
 	created = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	feed_id = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	success = db.Column(db.Boolean())
