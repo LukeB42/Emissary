@@ -45,7 +45,7 @@ class FeedGroup(db.Model):
 	__tablename__ = "feed_groups"
 	id      = db.Column(db.Integer(), primary_key=True)
 	key_id  = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
-	uid     = db.Column(db.String(), default=uid())
+	uid     = db.Column(db.String(20), default=uid())
 	name    = db.Column(db.String(80))
 	feeds   = db.relationship('Feed', backref="group")
 	created = db.Column(db.DateTime(timezone=True), default=db.func.now())
@@ -71,7 +71,7 @@ class Feed(db.Model):
 	id       = db.Column(db.Integer(), primary_key=True)
 	key_id   = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
 	group_id = db.Column(db.Integer(), db.ForeignKey("feed_groups.id"))
-	uid      = db.Column(db.String(),  default=uid())
+	uid      = db.Column(db.String(20),  default=uid())
 	name     = db.Column(db.String(80))
 	url      = db.Column(db.String(80))
 	schedule = db.Column(db.String(80))
@@ -126,13 +126,13 @@ class Article(db.Model):
 	__tablename__ = "articles"
 	id         = db.Column(db.Integer(), primary_key=True)
 	key_id     = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
-	uid        = db.Column(db.String())
+	uid        = db.Column(db.String(20))
 	feed_id    = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	title      = db.Column(db.String(80))
-	url        = db.Column(db.String())
-	content    = db.Column(db.String())
+	url        = db.Column(db.String(200))
+	content    = db.Column(db.String(2000))
 	ccontent   = db.Column(db.LargeBinary())
-	summary    = db.Column(db.String())
+	summary    = db.Column(db.String(800))
 	created    = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	compressed = db.Column(db.Boolean(), default=False)
 
@@ -181,7 +181,7 @@ class Event(db.Model):
 	created = db.Column(db.DateTime(timezone=True), default=db.func.now())
 	feed_id = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	success = db.Column(db.Boolean())
-	message = db.Column(db.String())
+	message = db.Column(db.String(200))
 
 	def __repr__(self):
 		return "<Event>"

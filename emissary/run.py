@@ -96,6 +96,7 @@ if __name__ == "__main__":
 
 	# Build logger from config
 	log = Log("Emissary", log_file=options.logfile, log_stdout= not options.daemonise)
+	log.debug = options.debug
 	app.log = log
 
 	log("Starting Emissary %s." % app.version)

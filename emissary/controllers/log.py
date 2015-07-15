@@ -40,5 +40,5 @@ class Log(object):
 			if level == 'error': level 		= 40
 			if level == 'critical': level	= 50
 
-#			if (level > 15) or (self.debug):
-			self.log.log(level,data)
+			if (level > 15) or (self.debug):
+				self.log.log(level,data)
