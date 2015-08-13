@@ -107,17 +107,12 @@ class Articles(Pane):
 					if status != 200:
 						statuspane.status = str(status)
 					else:
-						heading = "%s\n%s (%s ago)\n%s\n\n" % \
-							(article['title'].encode("ascii", "ignore"),
-							article['feed'],
-							tconv(int(time.time()) - int(article['created'])),
-							article['url'])
+						self.reader.article = article
 						self.reader.data = article['content']
-						self.reader.change_content(0, heading)
 						self.reader.active = True
 						self.active = False
 
-		elif character == 114:           # r to refresh
+		elif character == 114:             # r to refresh
 			self.fetch_items()
 
 		elif character == 9:               # tab to reader
@@ -160,7 +155,8 @@ class Articles(Pane):
 		self.content = []
 		for r in res:
 			self.items.append([0, r['title'].encode("ascii", "ignore"), r['uid'], r['content_available']])
-		self.items[0][0] = 1
+		if self.items:
+			self.items[0][0] = 1
 
 class Reader(Pane):
 	"""
@@ -170,8 +166,16 @@ class Reader(Pane):
 	data      = ""
 	outbuffer = ""
 	position  = 0
+	article   = None
 
 	def update(self):
+		if self.article:
+			heading = "%s\n%s (%s ago)\n%s\n\n" % \
+				(self.article['title'].encode("ascii","ignore"),
+				self.article['feed'],
+				tconv(int(time.time()) - int(self.article['created'])),
+				self.article['url'])
+			self.change_content(0, heading)
 		self.outbuffer = self.data.split('\n')[self.position:]
 		self.change_content(1, '\n'.join(self.outbuffer))
 
@@ -202,7 +206,7 @@ class StatusLine(Pane):
 	buffer = ""
 	status = ""
 	searching = False
-	tagline = "Psybernetics."
+	tagline = "Psybernetics %s." % time.asctime().split()[-1]
 
 	def update(self):
 		if self.searching:
@@ -245,10 +249,8 @@ class StatusLine(Pane):
 				try: self.buffer += chr(character)     # Append input to buffer
 				except: pass
 
-####### INIT 
 
 window = Window(blocking=True)
-#window.debug = 1
 
 feedgroups = FeedGroups("feedgroups")
 feedgroups.active = False
