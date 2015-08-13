@@ -105,7 +105,7 @@ class Articles(Pane):
 					if status != 200:
 						statuspane.status = str(status)
 					else:
-						statuspane.status = article['title']
+						statuspane.status = article['title'].encode("ascii", "ignore")
 						self.reader.data = article['content']
 						self.reader.active = True
 						self.active = False
@@ -143,13 +143,17 @@ class Articles(Pane):
 	def fetch_items(self):
 		(res, status) = self.window.c.get("articles?per_page=%i" % self.height)
 		if status == 200:
-			self.items = []
-			for r in res:
-				self.items.append([0, r['title'].encode("ascii", "ignore"), r['uid'], r['content_available']])
-			self.items[0][0] = 1
+			self.fill_menu(res)
 		else:
 			status = self.window.get("status")
 			status.status = str(res)
+
+	def fill_menu(self, res):
+		self.items = []
+		self.content = []
+		for r in res:
+			self.items.append([0, r['title'].encode("ascii", "ignore"), r['uid'], r['content_available']])
+		self.items[0][0] = 1
 
 class Reader(Pane):
 	"""
@@ -188,25 +192,50 @@ class Reader(Pane):
 class StatusLine(Pane):
 	geometry = [EXPAND, 2]
 	content = []
+	buffer = ""
 	status = ""
-	tagline = "Psybernetics Research."
+	searching = False
+	tagline = "Psybernetics."
 
 	def update(self):
-		state = self.tagline
-		state += ' ' * ((self.width /2) - len(self.tagline) - (len(str(self.status))/2))
-		state += str(self.status)
-		self.change_content(0, state)
+		if self.searching:
+			self.change_content(0, "/"+self.buffer, palette("black", "white"))
+		else:
+			state = self.tagline
+			state += ' ' * ((self.width /2) - len(self.tagline) - (len(str(self.status))/2))
+			state += str(self.status)
+			self.change_content(0, state)
 
+	def process_input(self, character):
+		if not self.searching and character == 47: # / to search
+			self.searching = True
+			return
+		if self.searching:
+			self.window.window.clear()
+			if character == 23 and self.buffer:      # Clear buffer on ^W
+				self.buffer = ''
+			elif character == 263:                   # Handle backspace
+				if self.buffer:
+					self.buffer = self.buffer[:-1]
+				if not self.buffer:
+					self.searching = False
 
+			elif character == 10 or character == 13:     # Handle the return key
+				self.searching = False
+				articles = self.window.get("articles")
+				(res, status) = self.window.c.get("articles/search/"+self.buffer)
+				self.buffer = ""
+				if status != 200:
+					self.status = str(status)
+				else:
+					articles.fill_menu(res)
+			else:
+				try: self.buffer += chr(character)     # Append input to buffer
+				except: pass
 
 ####### INIT 
 
-if 'SSH_CONNECTION' in os.environ:
-	blocking = True
-else: 
-	blocking = False
-
-window = Window(blocking=blocking)
+window = Window(blocking=True)
 #window.debug = 1
 
 feedgroups = FeedGroups("feedgroups")
@@ -227,15 +256,9 @@ articles.reader = reader
 
 
 status     = StatusLine("status")
-status.active = False
 
 panes = [feedgroups,feeds,articles,reader]
 window.add(panes)
 window.add(status)
 
 window.exit_keys.append(4)
-
-
-
-
-
