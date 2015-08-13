@@ -1,5 +1,7 @@
-from emissary.controllers.window import *
 import os
+import time
+from emissary.controllers.window import *
+from emissary.controllers.utils import tconv
 
 class EmissaryMenu(Pane):
 	"""
@@ -105,10 +107,22 @@ class Articles(Pane):
 					if status != 200:
 						statuspane.status = str(status)
 					else:
-						statuspane.status = article['title'].encode("ascii", "ignore")
+						heading = "%s\n%s (%s ago)\n%s\n\n" % \
+							(article['title'].encode("ascii", "ignore"),
+							article['feed'],
+							tconv(int(time.time()) - int(article['created'])),
+							article['url'])
 						self.reader.data = article['content']
+						self.reader.change_content(0, heading)
 						self.reader.active = True
 						self.active = False
+
+		elif character == 114:           # r to refresh
+			self.fetch_items()
+
+		elif character == 9:               # tab to reader
+			self.reader.active = True
+			self.active = False
 
 		# Handle navigating the menu
 		elif character in [259, 258, 339, 338]:
@@ -132,13 +146,6 @@ class Articles(Pane):
 						item[0] = 0
 						self.items[-1][0] = 1
 						break
-
-		elif character == 114:           # r to refresh
-			self.fetch_items()
-
-		elif character == 9:             # tab to reader
-			self.reader.active = True
-			self.active = False
 
 	def fetch_items(self):
 		(res, status) = self.window.c.get("articles?per_page=%i" % self.height)
@@ -208,6 +215,8 @@ class StatusLine(Pane):
 
 	def process_input(self, character):
 		if not self.searching and character == 47: # / to search
+			articles = self.window.get("articles")
+			articles.active = False
 			self.searching = True
 			return
 		if self.searching:
@@ -219,10 +228,13 @@ class StatusLine(Pane):
 					self.buffer = self.buffer[:-1]
 				if not self.buffer:
 					self.searching = False
+					articles = self.window.get("articles")
+					articles.active = True
 
 			elif character == 10 or character == 13:     # Handle the return key
 				self.searching = False
 				articles = self.window.get("articles")
+				articles.active = True
 				(res, status) = self.window.c.get("articles/search/"+self.buffer)
 				self.buffer = ""
 				if status != 200:
