@@ -25,7 +25,6 @@ from emissary.models import APIKey
 from emissary.controllers.log import Log
 from emissary.controllers.scripts import Scripts
 from emissary.controllers.load import parse_crontab
-from emissary.controllers.utils import export_crontab
 from emissary.controllers.manager import FeedManager
 
 try:
