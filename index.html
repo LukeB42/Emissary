@@ -172,6 +172,7 @@ Usage: python -m emissary.run [options]
   --version             show program's version number and exit
   -h, --help            show this help message and exit
   -c, --crontab         Crontab to parse
+  --export-crontab      Write database arrangement to file
   --config              (defaults to emissary.config)
   -a, --address         (defaults to 0.0.0.0)
   -p PORT, --port       (defaults to 6362)
@@ -337,10 +338,19 @@ determines whether new keys can be anonymously created.</p>
 <td>name</td>
 <td>The name of the new key to create</td>
 </tr>
+<tr>
+<td>reader</td>
+<td>Whether the key is limited to <code>GET</code> requests</td>
+</tr>
 </tbody></table>
 
 <p>The name must be unique and if <code>PERMIT_NEW</code> is set to <code>False</code> then new keys will only be created
 through whichever key is named <code>MASTER_KEY_NAME</code>.</p>
+
+<p>Setting a value for <code>reader</code> and making the request with an existing key creates
+a reader key. Reader keys treated like their parent key but are limited to <code>GET</code> requests.<br />
+Reader keys cannot make requests to <code>/v1/keys/:name</code>.
+</p>
 
 <h2 id="post">POST</h2>
 
