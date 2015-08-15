@@ -69,8 +69,6 @@ class Window(object):
 		self.window.leaveok(1)
 		_curses.raw()
 		self.window.keypad(1)
-		_curses.start_color()
-		_curses.use_default_colors()
 		_curses.noecho()
 		_curses.cbreak()
 		_curses.nonl()

@@ -206,7 +206,8 @@ class StatusLine(Pane):
 	buffer = ""
 	status = ""
 	searching = False
-	tagline = "Psybernetics %s." % time.asctime().split()[-1]
+#	tagline = "Psybernetics %s." % time.asctime().split()[-1]
+	tagline = "Thanks God"
 
 	def update(self):
 		if self.searching:
@@ -218,6 +219,7 @@ class StatusLine(Pane):
 			self.change_content(0, state)
 
 	def process_input(self, character):
+		self.window.window.clear()
 		if not self.searching and character == 47: # / to search
 			articles = self.window.get("articles")
 			articles.active = False
@@ -236,18 +238,20 @@ class StatusLine(Pane):
 					articles.active = True
 
 			elif character == 10 or character == 13:     # Handle the return key
+				# Pass control back to the articles view
 				self.searching = False
 				articles = self.window.get("articles")
 				articles.active = True
-				(res, status) = self.window.c.get("articles/search/"+self.buffer)
 				self.buffer = ""
-				if status != 200:
-					self.status = str(status)
-				else:
-					articles.fill_menu(res)
 			else:
 				try: self.buffer += chr(character)     # Append input to buffer
 				except: pass
+				# Perform a search for what's in the current buffer.
+				articles = self.window.get("articles")
+				url = "articles/search/"+self.buffer+"?per_page=" + str(articles.height)
+				(res, status) = self.window.c.get(url)
+				if status == 200:
+					articles.fill_menu(res)
 
 
 window = Window(blocking=True)
