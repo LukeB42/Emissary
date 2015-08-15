@@ -12,12 +12,19 @@ from multiprocessing import Queue
 from emissary.controllers.utils import uid
 
 class APIKey(db.Model):
+	"""
+	An Emissary API Key.
+	Reader keys cannot PUT, POST or DELETE.
+	"""
 	__tablename__ = 'api_keys'
 	id         = db.Column(db.Integer, primary_key=True)
+	parent_id  = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
 	name       = db.Column(db.String(80))
 	key        = db.Column(db.String(120))
 	active     = db.Column(db.Boolean())
+	reader     = db.Column(db.Boolean(), default=False)
 	created    = db.Column(db.DateTime(timezone=True), default=db.func.now())
+	parent     = db.relationship("APIKey", backref="readers", remote_side=[id])
 	feedgroups = db.relationship("FeedGroup", backref="key")
 	feeds      = db.relationship("Feed", backref="key")
 	articles   = db.relationship("Article", backref="key")
@@ -39,6 +46,9 @@ class APIKey(db.Model):
 		if feedgroups:
 			response['feedgroups'] = [group.jsonify() for group in self.feedgroups]
 		response['active'] = self.active
+		response['reader'] = self.reader
+		if self.reader:
+			response['parent'] = self.parent.name
 		return response
 
 class FeedGroup(db.Model):
@@ -129,7 +139,7 @@ class Article(db.Model):
 	uid        = db.Column(db.String(20))
 	feed_id    = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
 	title      = db.Column(db.String(80))
-	url        = db.Column(db.String(200))
+	url        = db.Column(db.String(400))
 	content    = db.Column(db.String(2000))
 	ccontent   = db.Column(db.LargeBinary())
 	summary    = db.Column(db.String(800))

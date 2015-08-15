@@ -35,7 +35,7 @@ class FeedGroupCollection(restful.Resource):
 		"""
 		 Create a new feed group, providing the name isn't already in use.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",  type=str, help="", required=True)
@@ -74,7 +74,7 @@ class FeedGroupResource(restful.Resource):
 		 Create a new feed providing the name and url are unique.
 		 Feeds must be associated with a group.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="", required=True)
@@ -125,7 +125,7 @@ class FeedGroupResource(restful.Resource):
 	def post(self, groupname):
 		"Rename a feedgroup or toggle active status"
 
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="Rename a feed group",)
@@ -154,7 +154,7 @@ class FeedGroupResource(restful.Resource):
 
 	@gzipped
 	def delete(self, groupname):
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 		
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:
@@ -222,7 +222,7 @@ class FeedGroupStart(restful.Resource):
 		"""
 		 Start all feeds within a group.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:
@@ -235,7 +235,7 @@ class FeedGroupStart(restful.Resource):
 class FeedGroupStop(restful.Resource):
 
 	def post(self, groupname):
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:

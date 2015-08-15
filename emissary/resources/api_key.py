@@ -11,11 +11,20 @@ from flask.ext import restful
 from flask.ext.restful import reqparse, abort
 from emissary.controllers.utils import get, gzipped
 
-def auth():
+def auth(forbid_reader_keys=False):
+	"""
+	Here we determine that inactive keys are invalid
+	and that reader keys are their parent unless forbidden.
+	"""
 	if 'Authorization' in request.headers:
 		key_str = request.headers['Authorization'].replace('Basic ', '')
 		key = APIKey.query.filter(APIKey.key == key_str).first()
-		if key and key.active: return key
+		if key and key.active:
+			if key.reader:
+				if not forbid_reader_keys:
+					return key.parent
+				abort(401, message="Forbidden to reader keys.")
+			return key
 	abort(401, message="Invalid API Key.")
 
 class KeyCollection(restful.Resource):
@@ -38,16 +47,36 @@ class KeyCollection(restful.Resource):
 
 	@gzipped
 	def put(self):
-		"""This method creates keys under the provided name,
-			presuming config['PERMIT_NEW'] is enabled or the master key is in use."""
+		"""
+			This method creates keys under the specified name,
+			presuming config['PERMIT_NEW'] is enabled or the master key is in use.
+
+			Reader keys (keys that can only perform GET requests) are created by setting
+			the "reader" parameter to a value in the body of the request.
+			They are automatically associated with the requesting key.
+		"""
 		key = None
 		parser = reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="Name associated with the key", required=True)
+		parser.add_argument("reader",type=bool, help="Creates a reader key", default=False)
 		args = parser.parse_args()
 
 		if 'Authorization' in request.headers:
 			key_str = request.headers['Authorization'].replace('Basic ', '')
 			key = APIKey.query.filter(APIKey.key == key_str).first()
+			if key.reader:
+				abort(401, message="Reader keys cannot create API keys.")
+
+		# Create a reader key if this request has been made with an existing key
+		if key and args.name and args.reader:
+			new_key = APIKey(name=args.name, active=True, reader=True)
+			new_key.key = new_key.generate_key_str()
+			key.readers.append(new_key)
+			db.session.add(key)
+			db.session.add(new_key)
+			db.session.commit()
+
+			return new_key.jsonify(with_key_str=True), 201
 
 		if (key and key.name == app.config['MASTER_KEY_NAME']) or app.config['PERMIT_NEW']:
 			# Permit only simple names (character limit, alphanumeric)
@@ -72,7 +101,7 @@ class KeyCollection(restful.Resource):
 	def post(self):
 		"This method is for updating existing API keys via the master key."
 
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = reqparse.RequestParser()
 		parser.add_argument("key",type=str, help="API Key")
@@ -116,7 +145,7 @@ class KeyCollection(restful.Resource):
 	@gzipped
 	def delete(self):
 		# http://docs.sqlalchemy.org/en/rel_0_9/orm/tutorial.html#configuring-delete-delete-orphan-cascade
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = reqparse.RequestParser()
 		parser.add_argument("key",type=str, help="API Key")
@@ -140,7 +169,7 @@ class KeyCollection(restful.Resource):
 
 class KeyResource(restful.Resource):
 	def get(self, name):
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 		if key.name != app.config['MASTER_KEY_NAME'] and name != key.name:
 			abort(403)
 

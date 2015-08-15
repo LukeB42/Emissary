@@ -25,7 +25,7 @@ class FeedCollection(restful.Resource):
 		 Create a new feed providing the name and url are unique.
 		 Feeds must be associated with a group.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="", required=True)
@@ -88,7 +88,7 @@ class FeedResource(restful.Resource):
 		"""
 		 Modify an existing feed.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="")
@@ -138,7 +138,7 @@ class FeedResource(restful.Resource):
 		 Halt and delete a feed.
 		 Default to deleting its articles.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
 		if not feed:
 			restful.abort(404)
@@ -219,7 +219,7 @@ class FeedSearch(restful.Resource):
 class FeedStartResource(restful.Resource):
 
 	def post(self, groupname, name):
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
 		if feed:
@@ -230,7 +230,7 @@ class FeedStartResource(restful.Resource):
 class FeedStopResource(restful.Resource):
 
 	def post(self, groupname, name):
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
 		if feed:
