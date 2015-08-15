@@ -153,7 +153,7 @@ class Articles(Pane):
 	def fill_menu(self, res):
 		self.items = []
 		self.content = []
-		for r in res:
+		for r in res["data"]:
 			self.items.append([0, r['title'].encode("ascii", "ignore"), r['uid'], r['content_available']])
 		if self.items:
 			self.items[0][0] = 1
