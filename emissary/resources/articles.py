@@ -47,7 +47,7 @@ class ArticleCollection(restful.Resource):
 #		key = auth()
 
 #		parser = restful.reqparse.RequestParser()
-#		parser.add_argument("feed",type=str, help="", required=True)
+#		parser.add_argument("feed",type=str, help="", required=False)
 #		parser.add_argument("url",type=str, help="", required=True)
 #		args = parser.parse_args()
 #		return {}, 201
@@ -127,7 +127,7 @@ class ArticleResource(restful.Resource):
 		"""
 		 Delete an article.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		article = Article.query.filter(and_(Article.key == key, Article.uid == uid)).first()
 		if article:
