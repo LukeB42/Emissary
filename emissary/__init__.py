@@ -34,7 +34,7 @@ app = Flask("emissary")
 # using options.config in run.py (python -m emissary.run -c somefile.py)
 app.config.from_object("emissary.config")
 
-app.version = "2.0.0"
+app.version = "2.1.0"
 app.inbox = Queue()
 app.scripts     = None
 app.feedmanager = None

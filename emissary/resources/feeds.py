@@ -6,7 +6,7 @@ from flask.ext import restful
 from sqlalchemy import desc, and_
 from emissary.models import Feed, FeedGroup, Article
 from emissary.resources.api_key import auth
-from emissary.controllers.utils import gzipped
+from emissary.controllers.utils import gzipped, make_response
 from emissary.controllers.cron import CronError, parse_timings
 
 class FeedCollection(restful.Resource):
@@ -172,20 +172,21 @@ class FeedArticleCollection(restful.Resource):
 
 		# Return a list of the JSONified Articles ordered by descending creation date and paginated.
 		if args.content == True:
-			return [a.jsonify() for a in \
-					Article.query.filter(and_(Article.key == key, Article.content != None, Article.feed == feed))
-					.order_by(desc(Article.created)).paginate(args.page, per_page).items
-			]
-		elif args.content == False:
-			return [a.jsonify() for a in \
-					Article.query.filter(and_(Article.key == key, Article.content == None, Article.feed == feed))
-					.order_by(desc(Article.created)).paginate(args.page, per_page).items
-			]
+			query = Article.query.filter(and_(Article.key == key, Article.content != None, Article.feed == feed))\
+					.order_by(desc(Article.created)).paginate(args.page, per_page)
 
-		return [a.jsonify() for a in \
-				Article.query.filter(and_(Article.key == key, Article.feed == feed))
-				.order_by(desc(Article.created)).paginate(args.page, per_page).items
-		]
+			return make_response(request.url, query)
+
+		elif args.content == False:
+			query = Article.query.filter(and_(Article.key == key, Article.content == None, Article.feed == feed))\
+					.order_by(desc(Article.created)).paginate(args.page, per_page)
+
+			return make_response(request.url, query)
+
+		query = Article.query.filter(and_(Article.key == key, Article.feed == feed))\
+				.order_by(desc(Article.created)).paginate(args.page, per_page)
+
+		return make_response(request.url, query)
 
 class FeedSearch(restful.Resource):
 
@@ -210,11 +211,11 @@ class FeedSearch(restful.Resource):
 
 		f = f[0]
 
-		return [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed == f, Article.title.like("%" + terms + "%")))
-				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-		]
+		query = Article.query.filter(
+				and_(Article.feed == f, Article.title.like("%" + terms + "%")))\
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+
+		return make_response(request.url, query)
 
 class FeedStartResource(restful.Resource):
 
