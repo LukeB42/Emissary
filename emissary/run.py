@@ -21,10 +21,12 @@ import optparse
 from multiprocessing import Process
 
 from emissary import app, init, db
+from emissary.models import APIKey
 from emissary.controllers.log import Log
 from emissary.controllers.scripts import Scripts
-from emissary.controllers.manager import FeedManager
 from emissary.controllers.load import parse_crontab
+from emissary.controllers.utils import export_crontab
+from emissary.controllers.manager import FeedManager
 
 try:
 	import setproctitle
@@ -63,6 +65,21 @@ def Daemonise(pidfile):
 		except OSError:
 			pass
 
+def export_crontab(filename):
+	"""
+	Defined here to prevent circular imports.
+	"""
+	crontab = ""
+	fd = open(filename, "w")
+	keys = [k for k in APIKey.query.all() if not k.reader]
+	for key in keys:
+		crontab += "apikey: %s\n\n" % key.key
+		for feed in key.feeds:
+			crontab += '%s "%s" "%s" %s\n' % (feed.url, feed.name, feed.group.name, feed.schedule)
+			crontab += "\n"
+	fd.write(crontab)
+	fd.close()
+
 if __name__ == "__main__":
 	prog = "Emissary"
 	description = "A cronlike program for indexing HTTP resources."
@@ -76,6 +93,7 @@ if __name__ == "__main__":
 	parser.add_option("-p", "--port", dest="port", action="store", default='6362', help="(defaults to 6362)")
 	parser.add_option("--key", dest="key", action="store", default=None, help="SSL key file")
 	parser.add_option("--cert", dest="cert", action="store", default=None, help="SSL certificate")
+	parser.add_option("--export-crontab", dest="export_crontab", action="store", default=False, help="Write out the current database as a crontab")
 	parser.add_option("--pidfile", dest="pidfile", action="store", default="emissary.pid", help="(defaults to ./emissary.pid)")
 	parser.add_option("--logfile", dest="logfile", action="store", default="emissary.log", help="(defaults to ./emissary.log)")
 	parser.add_option("--stop", dest="stop", action="store_true", default=False)
@@ -121,8 +139,14 @@ if __name__ == "__main__":
 			sys.stderr.write('Emissary not running or no PID file found\n')
 		sys.exit(0)
 
-#	if options.interactive:
-#		repl.run()
+	if options.export_crontab:
+		try:
+			export_crontab(options.export_crontab)
+			log('Crontab written to "%s".' % options.export_crontab)
+		except Exception, e:
+			log('Error writing crontab: %s' % e.message)
+		raise SystemExit
+
 
 	if not options.key and not options.cert:
 		print "SSL cert and key required. (--key and --cert)"
