@@ -201,7 +201,7 @@ class Reader(Pane):
 			self.active = False
 
 class StatusLine(Pane):
-	geometry = [EXPAND, 2]
+	geometry = [EXPAND, 1]
 	content = []
 	buffer = ""
 	status = ""
