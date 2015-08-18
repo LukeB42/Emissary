@@ -199,5 +199,4 @@ def make_response(url, query, jsonify=True):
 	response['links']['self'] = url
 	if query.has_next:
 		response['links']['next'] = update_url(url, {"page": str(query.next_num)})
-#	response['links']['last'] = update_url(url, {"page": str(query.total/query.per_page)})
 	return response
