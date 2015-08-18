@@ -1,14 +1,14 @@
 #! _*_ coding: utf-8 _*_
+# Copyright Luke Brooks, RedFlag A!ert 2015.
 # Defines a simple ncurses window, an event loop and some panes.
-# Luke Brooks, sponsored by Redflag A!ert. 2015.
 import time
 import _curses
 VERSION = "0.0.1"
 
-FIT     = "FIT"    # pane axis hugs its content
-EXPAND  = "EXPAND" # stretch on axis as much as possible
-# These values let us align pane content
-ALIGN_LEFT  = "ALIGN_LEFT" 
+FIT     = "FIT"              # pane axis hugs its content
+EXPAND  = "EXPAND"           # stretch on axis as much as possible
+
+ALIGN_LEFT  = "ALIGN_LEFT"   # values for the align argument to Pane.change_content
 ALIGN_RIGHT = "ALIGN_RIGHT" 
 ALIGN_CENTER= "ALIGN_CENTER"
 
@@ -72,6 +72,7 @@ class Window(object):
 		_curses.noecho()
 		_curses.cbreak()
 		_curses.nonl()
+		_curses.curs_set(0)
 		if self.blocking:
 			self.window.nodelay(0)
 		else:
@@ -221,7 +222,6 @@ class Window(object):
 
 							if pane.wrap == 1 or pane.wrap == True:
 								line = line.split()
-								l = len(line)
 							for c,j in enumerate(line):
 								if y > bottom_left_top - top_left_top: break
 								# Place a space between words after the first if word-wrapping
@@ -233,16 +233,18 @@ class Window(object):
 									x  = 0
 									# Draw ... if j doesnt fit in the line
 									if len(j) > top_right_left - top_left_left+x:
+										if not c:
+											y -= 1
 										t = '...'[:(top_right_left - top_left_left+x)]
 										self.addstr(top_left_top+i+y, top_left_left+x, t, hilight_attrs)
-										y += 1
-										x = 0
 										continue
 								self.addstr(top_left_top+i+y, top_left_left+x, j, hilight_attrs)
 								x += len(j)
+								l = x # The length of the line is the
+								      # current position on the horizontal.
 
 							# Process next line in current frame
-							# the value for i will increment
+							# the value for i will increment, presuming there's a newline..
 							if self.debug:
 								self.addstr(self.height-8,0, str(i))
 								self.addstr(self.height-7,0, str(c))
@@ -260,12 +262,16 @@ class Window(object):
 					else:
 						self.addstr(top_left_top+i+y, top_left_left+x, line, attrs)
 					x=0
-				# leave cursor at the end of the last line after processing the frame.
+				# leave cursor at the end of the last line after processing the line.
 				x = l
 				y += i
 
 	def process_input(self):
-		# Get input
+		"""
+		Send input to panes marked as active after checking for
+		a request to redraw the screen (^L), a request to exit,
+		and optionally display character codes as they're received.
+		"""
 		try:
 			character = self.window.getch()
 		except Exception, e:
@@ -375,7 +381,7 @@ class Window(object):
 
 				if isinstance(desired_height, int):
 					element.height = desired_height
-					claimed_columns += element.height
+					claimed_columns += element.height +1
 					continue
 
 				elif isinstance(desired_height, str):
@@ -392,18 +398,31 @@ class Window(object):
 						growing_panes.append(element)
 						continue
 
-				element.height = desired_height
-
-		# Calculate how many columns are left by panes with fixed heights
+		# Calculate how many rows are left by panes with fixed heights
 		if growing_panes:
 			remaining_space = self.height - claimed_columns
 			typical_expanse = remaining_space / len(growing_panes)
-			for pane in growing_panes:
+			tracking = 0
+
+			for i, pane in enumerate(growing_panes):
 				if isinstance(pane, list):
-					for p in pane:
+					for k,p in enumerate(pane):
 						p.height = typical_expanse
+						if not i and not self.height % 2:
+							p.height -= 1
+						if not k:
+							tracking += p.height
 				else:
 					pane.height = typical_expanse
+					if not i and not self.height % 2:
+						pane.height -= 1
+					tracking += pane.height
+
+			if self.debug == 2:
+				self.addstr(self.height-6, 0, "Expanded: %i" % tracking)
+				s = "odd" if self.height % 2 else "even"
+				self.addstr(self.height-1, self.width-len(s),s)
+				self.addstr(self.height-1, self.width/2,str(remaining_space))
 
 		# Then a pass for widths.
 		for v_index, element in enumerate(self.panes):
@@ -478,12 +497,6 @@ class Window(object):
 			for pane in growing_panes:
 				pane.width = remaining_space / len(growing_panes)
 
-		# Grant the first pane with height set to EXPAND an extra line if self.height is uneven:
-		if self.height % 2:
-			for pane in growing_panes:
-				pane.height += 1
-				break
-	
 		# Grant the rightmost panes an extra row if self.width is uneven:
 		if self.width % 2:
 			for pane in self.panes:
@@ -532,10 +545,10 @@ class Window(object):
 					if pane.hidden: continue
 					current_width  = pane.width
 					current_height = pane.height
-					upper       = ((y, x), (y, x+current_width))
-					lower       = ((y+current_height, x),
-					               (y+current_height, x+current_width))
-					pane.coords = [upper, lower]
+					upper          = ((y, x), (y, x+current_width))
+					lower          = ((y+current_height, x),
+					                  (y+current_height, x+current_width))
+					pane.coords    = [upper, lower]
 					x += current_width
 				y += current_height+1
 			else:
@@ -546,13 +559,12 @@ class Window(object):
 				lower          = ((y+current_height, x),
 				                  (y+current_height, x+current_width))
 				element.coords = [upper, lower]
-
 				y += current_height+1
 
 			if self.debug:
 				coordinates = "Coordinates: " + str([p.coords for p in self])
 				if len(coordinates) > self.width:
-					coordinates = coordinates[:self.width - 3]
+					coordinates  = coordinates[:self.width - 3]
 					coordinates += '...'
 				self.addstr(self.height-3, 0, coordinates)
 
@@ -694,10 +706,14 @@ class Pane(object):
 	Panes can not be placed inside one another.
 
 	The format for content is [text, alignment, attributes]. 
+
 	text can contain newlines and will be printed as-is, overflowing by default.
 	Multiple content elements can inhabit the same line and have different alignments.
 
+	The wrap attribute can be set to 1 to wrap on words or 2 to wrap by character.
+
 	Panes can be marked as floating, instructing Window to draw any EXPANDing panes around them.
+
 	"""
 	name              = ''
 	window            = None
@@ -719,7 +735,7 @@ class Pane(object):
 		"""
 		We define self.content here so it's unique across instances.
 		"""
-		self.name = name
+		self.name    = name
 		self.content = []
 
 	def process_input(self, character):
@@ -847,6 +863,7 @@ class Pager(Pane):
 		self.change_content(1, '\n'.join(self.outbuffer))
 
 	def process_input(self, character):
+		self.window.window.clear()
 		if character == 259:                       # Up arrow
 			if self.position != 0:
 				self.position -= 1
