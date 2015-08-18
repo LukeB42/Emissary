@@ -231,6 +231,8 @@ class Window(object):
 								if top_left_left+x+len(j) > top_right_left:
 									y += 1
 									x  = 0
+									if len(j) > 1 and j[0] == ' ':
+										j = j[1:]
 									# Draw ... if j doesnt fit in the line
 									if len(j) > top_right_left - top_left_left+x:
 										if not c:
