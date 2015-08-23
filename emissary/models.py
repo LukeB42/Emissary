@@ -157,7 +157,7 @@ class Article(db.Model):
 		if self.content or self.ccontent:
 			return '<Article "%s">' % self.title.encode("utf-8", "ignore")
 		if self.url and self.title:
-			return "<Article reference to %s>" % self.title.encode("utf-8", "ignore")
+			return '<Article reference to "%s">' % self.title.encode("utf-8", "ignore")
 		return "<Article>"
 
 	def jsonify(self, summary=False, content=False):

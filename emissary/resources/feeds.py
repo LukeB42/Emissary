@@ -6,68 +6,8 @@ from flask.ext import restful
 from sqlalchemy import desc, and_
 from emissary.models import Feed, FeedGroup, Article
 from emissary.resources.api_key import auth
-from emissary.controllers.utils import gzipped
+from emissary.controllers.utils import gzipped, make_response
 from emissary.controllers.cron import CronError, parse_timings
-
-class FeedCollection(restful.Resource):
-
-	@gzipped
-	def get(self):
-		"""
-		 Review all feeds associated with this key.
-		"""
-		key = auth()
-		return [feed.jsonify() for feed in key.feeds]
-
-	@gzipped
-	def put(self):
-		"""
-		 Create a new feed providing the name and url are unique.
-		 Feeds must be associated with a group.
-		"""
-		key = auth(forbid_reader_keys=True)
-
-		parser = restful.reqparse.RequestParser()
-		parser.add_argument("name",type=str, help="", required=True)
-		parser.add_argument("group",type=str, help="", required=True)
-		parser.add_argument("url",type=str, help="", required=True)
-		parser.add_argument("schedule",type=str, help="", required=True)
-		parser.add_argument("active",type=bool, default=True, help="Feed is active", required=False)
-		args = parser.parse_args()
-
-		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == args.group)).first()
-		if not fg:
-			return {"message":"Unknown Feed Group %s" % args.group}, 304
-
-		# Verify the schedule...
-		try:
-			parse_timings(args.schedule)
-		except CronError, err:
-			return {"message": err.message}, 500
-
-		# Check the URL and name is unique.
-		if [feed for feed in key.feeds if feed.name == args.name or feed.url == args.url]:
-			return {"message": "A feed on this key already exists with this name or url."}, 500
-
-		feed = Feed(name=args.name, url=args.url, schedule=args.schedule, active=args.active)
-
-		# We generally don't want to have objects in this system that don't belong to API keys.
-		fg.feeds.append(feed)
-		key.feeds.append(feed)
-
-		db.session.add(feed)
-		db.session.add(fg)
-		db.session.add(key)
-		db.session.commit()
-
-		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == args.name)).first()
-		if not feed:
-			return {"message":"Error saving feed."}, 304
-
-		# Schedule this feed. 0 here is a response
-		# queue ID (we're not waiting for a reply)
-		app.inbox.put([0, "start", [key,feed.name]])
-		return feed.jsonify(), 201
 
 class FeedResource(restful.Resource):
 
@@ -172,20 +112,21 @@ class FeedArticleCollection(restful.Resource):
 
 		# Return a list of the JSONified Articles ordered by descending creation date and paginated.
 		if args.content == True:
-			return [a.jsonify() for a in \
-					Article.query.filter(and_(Article.key == key, Article.content != None, Article.feed == feed))
-					.order_by(desc(Article.created)).paginate(args.page, per_page).items
-			]
-		elif args.content == False:
-			return [a.jsonify() for a in \
-					Article.query.filter(and_(Article.key == key, Article.content == None, Article.feed == feed))
-					.order_by(desc(Article.created)).paginate(args.page, per_page).items
-			]
+			query = Article.query.filter(and_(Article.key == key, Article.content != None, Article.feed == feed))\
+					.order_by(desc(Article.created)).paginate(args.page, per_page)
 
-		return [a.jsonify() for a in \
-				Article.query.filter(and_(Article.key == key, Article.feed == feed))
-				.order_by(desc(Article.created)).paginate(args.page, per_page).items
-		]
+			return make_response(request.url, query)
+
+		elif args.content == False:
+			query = Article.query.filter(and_(Article.key == key, Article.content == None, Article.feed == feed))\
+					.order_by(desc(Article.created)).paginate(args.page, per_page)
+
+			return make_response(request.url, query)
+
+		query = Article.query.filter(and_(Article.key == key, Article.feed == feed))\
+				.order_by(desc(Article.created)).paginate(args.page, per_page)
+
+		return make_response(request.url, query)
 
 class FeedSearch(restful.Resource):
 
@@ -210,11 +151,11 @@ class FeedSearch(restful.Resource):
 
 		f = f[0]
 
-		return [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed == f, Article.title.like("%" + terms + "%")))
-				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-		]
+		query = Article.query.filter(
+				and_(Article.feed == f, Article.title.like("%" + terms + "%")))\
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+
+		return make_response(request.url, query)
 
 class FeedStartResource(restful.Resource):
 

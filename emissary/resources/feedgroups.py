@@ -5,8 +5,8 @@ from flask import request
 from flask.ext import restful
 from sqlalchemy import and_, desc
 from emissary.resources.api_key import auth
-from emissary.controllers.utils import gzipped
 from emissary.models import FeedGroup, Feed, Article
+from emissary.controllers.utils import gzipped, make_response
 from emissary.controllers.cron import CronError, parse_timings
 
 class FeedGroupCollection(restful.Resource):
@@ -25,10 +25,10 @@ class FeedGroupCollection(restful.Resource):
 		parser.add_argument("content",type=bool, help="", required=False, default=None)
 		args = parser.parse_args()
 
-		return [fg.jsonify() for fg in \
-				FeedGroup.query.filter(FeedGroup.key == key)
-				.order_by(desc(FeedGroup.created)).paginate(args.page, args.per_page).items
-		]
+		query = FeedGroup.query.filter(FeedGroup.key == key)\
+				.order_by(desc(FeedGroup.created)).paginate(args.page, args.per_page)
+
+		return make_response(request.url, query)
 
 	@gzipped
 	def put(self):
@@ -192,29 +192,29 @@ class FeedGroupArticles(restful.Resource):
 
 		if args.content == True:
 
-			response = [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed.has(group=fg), Article.content != None))
-					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-			]
-			for doc in response:
-				if not doc['content_available']:
-					response.remove(doc)
-			return response
+			query = Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.content != None))\
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+
+			response = make_response(request.url, query)
+
+#			for doc in response['data']:
+#				if not doc['content_available']:
+#					response['data'].remove(doc)
+#			return response
 
 		if args.content == False:
-			return [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed.has(group=fg), Article.content == None))
-					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-			]
+			query = Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.content == None))\
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page)
 
-		return [a.jsonify() for a in \
-			Article.query.filter(
-				Article.feed.has(group=fg))
-				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-		]
+			return make_response(request.url, query)
 
+		query = Article.query.filter(
+				Article.feed.has(group=fg))\
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+
+		return make_response(request.url, query)
 
 class FeedGroupStart(restful.Resource):
 
@@ -263,11 +263,10 @@ class FeedGroupSearch(restful.Resource):
 		if not fg:
 			restful.abort(404)
 
-		return [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed.has(group=fg), Article.title.like("%" + terms + "%")))
-				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-		]
+		query = Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.title.like("%" + terms + "%")))\
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+		return make_response(request.url, query)
 
 class FeedGroupCount(restful.Resource):
 

@@ -4,9 +4,11 @@ gzipping requests thanks to a snippet on pocoo.org and unique ID generation.
 """
 import gzip
 import time
+import urllib
 import base64
 import hashlib
 import datetime
+import urlparse
 import functools 
 from emissary import app, db
 from sqlalchemy import or_, and_
@@ -175,3 +177,26 @@ def spaceparse(string):
 			res[k]=v
 		return res
 	return results
+
+def update_url(url, params):
+	url_parts = list(urlparse.urlparse(request.url))
+	query = dict(urlparse.parse_qsl(url_parts[4]))
+	query.update(params)
+	url_parts[4] = urllib.urlencode(query)
+	return urlparse.urlunparse(url_parts)
+
+def make_response(url, query, jsonify=True):
+	"""
+	 Take a paginated SQLAlchemy query and return
+	 a response that's more easily reasoned about
+	 by other programs.
+	"""
+	response = {}
+	if jsonify:
+		response['data'] = [i.jsonify() for i in query.items]
+
+	response['links'] = {}
+	response['links']['self'] = url
+	if query.has_next:
+		response['links']['next'] = update_url(url, {"page": str(query.next_num)})
+	return response
