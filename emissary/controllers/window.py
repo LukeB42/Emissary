@@ -139,7 +139,8 @@ class Window(object):
 				for i, line in enumerate(text.split("\n")):
 
 					# Don't attempt to draw below the window
-					if i+y > pane.height: break
+					if (i+y) > (bottom_left_top - top_left_top): break
+#					if i+y > pane.height: break
 #					if i+y > bottom_left_top or i+y > bottom_right_top: break
 
 					l = len(line)
@@ -383,7 +384,7 @@ class Window(object):
 
 				if isinstance(desired_height, int):
 					element.height = desired_height
-					claimed_columns += element.height +1
+					claimed_columns += element.height
 					continue
 
 				elif isinstance(desired_height, str):
@@ -402,29 +403,53 @@ class Window(object):
 
 		# Calculate how many rows are left by panes with fixed heights
 		if growing_panes:
+			g = len(growing_panes)
 			remaining_space = self.height - claimed_columns
-			typical_expanse = remaining_space / len(growing_panes)
+			typical_expanse = remaining_space / g
 			tracking = 0
+			rmg = remaining_space % g
 
+
+			# Calculate adjustments if the height isn't evenly shared
 			for i, pane in enumerate(growing_panes):
 				if isinstance(pane, list):
 					for k,p in enumerate(pane):
 						p.height = typical_expanse
-						if not i and not self.height % 2:
-							p.height -= 1
+						if not i:
+							# Account for claimed space
+							for x in range(len(growing_panes)):
+								if rmg == x:
+									p.height -= len(growing_panes) - (x+1)
+
+							# Adjust for an extra column that can't be evenly shared
+							if self.height % 2:
+								if not claimed_columns:
+									p.height += 1
+								else:
+									p.height -= claimed_columns
+							else:
+								p.height -= claimed_columns
 						if not k:
 							tracking += p.height
 				else:
 					pane.height = typical_expanse
-					if not i and not self.height % 2:
-						pane.height -= 1
+					if not i:
+						for x in range(len(growing_panes)):
+							if rmg == x:
+								pane.height -= len(growing_panes) - (x+1)
+						if self.height % 2:
+							if not claimed_columns:
+								pane.height += 1
+							else:
+								pane.height -= claimed_columns
+						else:
+							pane.height -= claimed_columns
+
 					tracking += pane.height
 
-			if self.debug == 2:
-				self.addstr(self.height-6, 0, "Expanded: %i" % tracking)
-				s = "odd" if self.height % 2 else "even"
-				self.addstr(self.height-1, self.width-len(s),s)
-				self.addstr(self.height-1, self.width/2,str(remaining_space))
+		s = "Growing rows: %i, %s number of rows: %s, claimed: %i, remaining: %i, remaining/growing: %i,rmodg: %i" % \
+			(g, "odd" if self.height % 2 else "even", self.height, claimed_columns,remaining_space, typical_expanse, remaining_space%g)
+#		self.addstr(self.height-1, self.width-len(s),s)
 
 		# Then a pass for widths.
 		for v_index, element in enumerate(self.panes):
@@ -524,6 +549,7 @@ class Window(object):
 		Update pane coordinate tuples based on their height and width relative to other panes
 		within the dimensions of the current window.
 
+		We account for panes with a height of 1 where the bottom coordinates are the same as the top.
 		Account for floating panes and self-coordinating panes adjacent to panes set to EXPAND.
 
 		Coordinates are of the form:
@@ -548,20 +574,20 @@ class Window(object):
 					current_width  = pane.width
 					current_height = pane.height
 					upper          = ((y, x), (y, x+current_width))
-					lower          = ((y+current_height, x),
-					                  (y+current_height, x+current_width))
+					lower          = ((y+(current_height if current_height > 1 else 0), x),
+					                  (y+(current_height if current_height > 1 else 0), x+current_width))
 					pane.coords    = [upper, lower]
 					x += current_width
-				y += current_height+1
+				y += (current_height+1 if current_height > 1 else 1)
 			else:
 				if element.hidden: continue
 				current_width  = element.width
 				current_height = element.height
 				upper          = ((y, x), (y, x+current_width))
-				lower          = ((y+current_height, x),
-				                  (y+current_height, x+current_width))
+				lower          = ((y+(current_height if current_height > 1 else 0), x),
+				                  (y+(current_height if current_height > 1 else 0), x+current_width))
 				element.coords = [upper, lower]
-				y += current_height+1
+				y += (current_height+1 if current_height > 1 else 1)
 
 			if self.debug:
 				coordinates = "Coordinates: " + str([p.coords for p in self])
