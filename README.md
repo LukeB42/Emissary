@@ -8,7 +8,7 @@ Emissary stores the full text of linked articles from RSS feeds or URLs containi
 Docs available [here](http://docs.psybernetics.org/).
 
 Note: Response attributes are changing by 5th September 2015 to make it easier
-to navigate by software. Check out the development branch to see for yourself.
+to navigate by software. These changes are on the development branch.
 
 --------
 ![Alt text](doc/emissary3.png?raw=true "Feed Groups")
