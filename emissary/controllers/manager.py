@@ -31,6 +31,10 @@ class FeedManager(object):
 		TODO: Start feeds by API key. Where each CronTab corresponds to a FeedGroup.
 		"""
 		for key in APIKey.query.all():
+
+			if key.reader:
+				continue
+
 			if not key.active:
 				self.log('API key "%s" marked inactive. Skipped.' % (key.name))
 				continue

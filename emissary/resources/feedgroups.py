@@ -5,8 +5,8 @@ from flask import request
 from flask.ext import restful
 from sqlalchemy import and_, desc
 from emissary.resources.api_key import auth
-from emissary.controllers.utils import gzipped
 from emissary.models import FeedGroup, Feed, Article
+from emissary.controllers.utils import gzipped, make_response
 from emissary.controllers.cron import CronError, parse_timings
 
 class FeedGroupCollection(restful.Resource):
@@ -25,17 +25,17 @@ class FeedGroupCollection(restful.Resource):
 		parser.add_argument("content",type=bool, help="", required=False, default=None)
 		args = parser.parse_args()
 
-		return [fg.jsonify() for fg in \
-				FeedGroup.query.filter(FeedGroup.key == key)
-				.order_by(desc(FeedGroup.created)).paginate(args.page, args.per_page).items
-		]
+		query = FeedGroup.query.filter(FeedGroup.key == key)\
+				.order_by(desc(FeedGroup.created)).paginate(args.page, args.per_page)
+
+		return make_response(request.url, query)
 
 	@gzipped
 	def put(self):
 		"""
 		 Create a new feed group, providing the name isn't already in use.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",  type=str, help="", required=True)
@@ -74,7 +74,7 @@ class FeedGroupResource(restful.Resource):
 		 Create a new feed providing the name and url are unique.
 		 Feeds must be associated with a group.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="", required=True)
@@ -125,7 +125,7 @@ class FeedGroupResource(restful.Resource):
 	def post(self, groupname):
 		"Rename a feedgroup or toggle active status"
 
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		parser = restful.reqparse.RequestParser()
 		parser.add_argument("name",type=str, help="Rename a feed group",)
@@ -154,7 +154,7 @@ class FeedGroupResource(restful.Resource):
 
 	@gzipped
 	def delete(self, groupname):
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 		
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:
@@ -192,29 +192,29 @@ class FeedGroupArticles(restful.Resource):
 
 		if args.content == True:
 
-			response = [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed.has(group=fg), Article.content != None))
-					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-			]
-			for doc in response:
-				if not doc['content_available']:
-					response.remove(doc)
-			return response
+			query = Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.content != None))\
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+
+			response = make_response(request.url, query)
+
+#			for doc in response['data']:
+#				if not doc['content_available']:
+#					response['data'].remove(doc)
+#			return response
 
 		if args.content == False:
-			return [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed.has(group=fg), Article.content == None))
-					.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-			]
+			query = Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.content == None))\
+					.order_by(desc(Article.created)).paginate(args.page, args.per_page)
 
-		return [a.jsonify() for a in \
-			Article.query.filter(
-				Article.feed.has(group=fg))
-				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-		]
+			return make_response(request.url, query)
 
+		query = Article.query.filter(
+				Article.feed.has(group=fg))\
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+
+		return make_response(request.url, query)
 
 class FeedGroupStart(restful.Resource):
 
@@ -222,7 +222,7 @@ class FeedGroupStart(restful.Resource):
 		"""
 		 Start all feeds within a group.
 		"""
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:
@@ -235,7 +235,7 @@ class FeedGroupStart(restful.Resource):
 class FeedGroupStop(restful.Resource):
 
 	def post(self, groupname):
-		key = auth()
+		key = auth(forbid_reader_keys=True)
 
 		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
 		if not fg:
@@ -263,11 +263,10 @@ class FeedGroupSearch(restful.Resource):
 		if not fg:
 			restful.abort(404)
 
-		return [a.jsonify() for a in \
-				Article.query.filter(
-					and_(Article.feed.has(group=fg), Article.title.like("%" + terms + "%")))
-				.order_by(desc(Article.created)).paginate(args.page, args.per_page).items
-		]
+		query = Article.query.filter(
+					and_(Article.feed.has(group=fg), Article.title.like("%" + terms + "%")))\
+				.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+		return make_response(request.url, query)
 
 class FeedGroupCount(restful.Resource):
 
