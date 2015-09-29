@@ -1,7 +1,9 @@
 import time
+import gevent
 import urlparse
 import requests
 import feedparser
+from gevent import Greenlet
 from emissary import app, db
 from sqlalchemy import and_, or_
 from emissary.models import Article
@@ -47,11 +49,8 @@ def fetch_feed(feed, log):
 	links = parser.extract_links(r)
 	title = None
 	for link in links:
-#		try:
-		fetch_and_store(link, feed, log)
-#		except Exception, e:
-#			log("%s: %s: Error with %s: %s" % \
-#				(feed.key.name, feed.name, link, e.message), "error")
+		Greenlet.spawn(fetch_and_store, link, feed, log)
+	gevent.sleep(0)
 
 def fetch_and_store(link, feed, log, key=None, overwrite=False):
 	"""
