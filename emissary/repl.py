@@ -12,6 +12,7 @@ from emissary.client import Client
 from emissary.models import APIKey
 from subprocess import Popen, PIPE
 from emissary.controllers.utils import tconv, spaceparse
+from emissary.controllers.tui import window
 
 try:
 	from pygments import highlight
@@ -246,9 +247,14 @@ def reqwrap(func):
 if __name__ == "__main__":
 	parser = optparse.OptionParser(prog="python -m emissary.repl")
 	parser.add_option("--host", dest="host", action="store", default='localhost:6362/v1/')
+	parser.add_option("--ncurses", dest="ncurses", action="store_true", default=False)
 	(options,args) = parser.parse_args()
 
-	r = repl()
+	if options.ncurses:
+		r = window
+	else:
+		r = repl()
+
 	r.c = Client('','https://%s' % options.host, verify=False)
 
 	r.c.key = ""
@@ -263,17 +269,23 @@ if __name__ == "__main__":
 
 	if k: r.c.key = k.key
 	r.c.verify_https = False
-	r.highlight = highlight
-	r.prompt = r.formatted_prompt()
-	if highlight:
-		r.AVAILABLE_STYLES = set(STYLE_MAP.keys())
-		if 'tango' in r.AVAILABLE_STYLES: r.style = 'tango'
-		else:
-			for s in r.AVAILABLE_STYLES: break
-			r.style = s
+
+	if not options.ncurses:
+		r.highlight = highlight
+		r.prompt = r.formatted_prompt()
+		if highlight:
+			r.AVAILABLE_STYLES = set(STYLE_MAP.keys())
+			if 'tango' in r.AVAILABLE_STYLES: r.style = 'tango'
+			else:
+				for s in r.AVAILABLE_STYLES: break
+				r.style = s
 	r.c._send_request = reqwrap(r.c._send_request)
+
 	try:
-		r.cmdloop()
+		if options.ncurses:
+			window.start()
+		else:
+			r.cmdloop()
 	except KeyboardInterrupt:
 		print "^C"
 		raise SystemExit
