@@ -1,5 +1,4 @@
 #! _*_ coding: utf-8 _*_
-# Copyright Luke Brooks, RedFlag A!ert 2015.
 # Defines a simple ncurses window, an event loop and some panes.
 import time
 import _curses
