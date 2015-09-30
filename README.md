@@ -8,6 +8,7 @@ Emissary stores the full text of linked articles from RSS feeds or URLs containi
 Docs available [here](http://docs.psybernetics.org/).
 
 --------
+![Alt text](doc/emissary4.png?raw=true "ncurses Client")
 ![Alt text](doc/emissary3.png?raw=true "Feed Groups")
 ![Alt text](doc/emissary2.png?raw=true "Articles")
 <pre>
