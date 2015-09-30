@@ -70,9 +70,6 @@ def init():
 	from resources import feedgroups
 	from resources import articles
 
-	if "ENABLE_WEB_FRONTEND" in app.config and app.config['ENABLE_WEB_FRONTEND']:
-		from views import index
-
 	api.add_resource(api_key.KeyCollection,          "/keys")
 	api.add_resource(api_key.KeyResource,            "/keys/<string:name>")
 
