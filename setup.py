@@ -61,6 +61,7 @@ setup(name='Emissary',
           "python-snappy",
           "requests",
           "pygments",
+          "window",
       ],
       keywords=["text extraction","document archival","document retrieval"]
 )
