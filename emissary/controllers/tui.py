@@ -1,7 +1,7 @@
 import os
 import time
-from emissary.controllers.window import *
 from emissary.controllers.utils import tconv
+from window import Window, Pane, ALIGN_LEFT, EXPAND, palette
 
 class EmissaryMenu(Pane):
 	"""

@@ -39,7 +39,7 @@ data_files = (
     )
 
 setup(name='Emissary',
-      version="2.0.0",
+      version="2.1.0",
       description='A microservice for indexing the plain text of articles and essays',
       author='Luke Brooks',
       author_email='luke@psybernetics.org.uk',
@@ -61,6 +61,7 @@ setup(name='Emissary',
           "python-snappy",
           "requests",
           "pygments",
+          "window",
       ],
       keywords=["text extraction","document archival","document retrieval"]
 )
