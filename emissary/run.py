@@ -75,7 +75,7 @@ def export_crontab(filename):
 		crontab += "apikey: %s\n\n" % key.key
 		for feed in key.feeds:
 			crontab += '%s "%s" "%s" %s\n' % (feed.url, feed.name, feed.group.name, feed.schedule)
-			crontab += "\n"
+		crontab += '\n\n'
 	fd.write(crontab)
 	fd.close()
 
