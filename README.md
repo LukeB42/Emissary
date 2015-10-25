@@ -70,15 +70,11 @@ apikey: your-api-key-here
 http://news.ycombinator.com/rss                       "HN"            "HN"             15!     *       *       *       *
 http://phys.org/rss-feed/                             "Phys.org"      "Phys.org"       1       12      *       *       *
 http://feeds.nature.com/news/rss/most_recent          "Nature"        "Nature"         30      13      *       *       *
-http://feeds.feedburner.com/IeeeSpectrum?format=xml   "IEEE Spectrum" "IEEE Spectrum"  45      14      *       *       *
 
 user@host $ python -m emissary.run -c feeds.txt
 Using API key "Primary".
 Primary: Creating feed group HN.
 Primary: HN: Creating feed "HN"
-Primary: Creating feed group Reuters.
-Primary: Reuters: Creating feed "Reuters UK"
-
 
 Emissary supports multiple apikey directives in one crontab.
 Subsequent feed definitions are associated with the previous key.
