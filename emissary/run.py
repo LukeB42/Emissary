@@ -92,7 +92,8 @@ if __name__ == "__main__":
 	parser.add_option("-p", "--port", dest="port", action="store", default='6362', help="(defaults to 6362)")
 	parser.add_option("--key", dest="key", action="store", default=None, help="SSL key file")
 	parser.add_option("--cert", dest="cert", action="store", default=None, help="SSL certificate")
-	parser.add_option("--export-crontab", dest="export_crontab", action="store", default=False, help="Write out current database as a crontab")
+	parser.add_option("--export-crontab", dest="export_crontab", action="store", default=False, help="Deprecated. Use --export")
+	parser.add_option("--export", dest="export", action="store", default=False, help="Write out current database as a crontab")
 	parser.add_option("--pidfile", dest="pidfile", action="store", default="emissary.pid", help="(defaults to ./emissary.pid)")
 	parser.add_option("--logfile", dest="logfile", action="store", default="emissary.log", help="(defaults to ./emissary.log)")
 	parser.add_option("--stop", dest="stop", action="store_true", default=False)
@@ -138,7 +139,7 @@ if __name__ == "__main__":
 			sys.stderr.write('Emissary not running or no PID file found\n')
 		sys.exit(0)
 
-	if options.export_crontab:
+	if options.export_crontab or options.export:
 		try:
 			export_crontab(options.export_crontab)
 			log('Crontab written to "%s".' % options.export_crontab)

@@ -29,6 +29,7 @@ sudo python setup.py install
   --config              (defaults to emissary.config)
   -a, --address         (defaults to 0.0.0.0)
   -p, --port            (defaults to 6362)
+  --export              Write the existing database as a crontab
   --key                 SSL key file
   --cert                SSL certificate
   --pidfile             (defaults to ./emissary.pid)
@@ -65,9 +66,11 @@ e5a59e0a-b457-45c6-9d30-d983419c43e1
 user@host $ cat feeds.txt
 apikey: your-api-key-here
 
-# url                                                 name         group     minute  hour    day     month   weekday
-http://news.ycombinator.com/rss                       "HN"         "HN"      15!     *       *       *       *
-http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3!      *       *       *
+# url                                                 name            group            minute  hour    day     month   weekday
+http://news.ycombinator.com/rss                       "HN"            "HN"             15!     *       *       *       *
+http://phys.org/rss-feed/                             "Phys.org"      "Phys.org"       1       12      *       *       *
+http://feeds.nature.com/news/rss/most_recent          "Nature"        "Nature"         30      13      *       *       *
+http://feeds.feedburner.com/IeeeSpectrum?format=xml   "IEEE Spectrum" "IEEE Spectrum"  45      14      *       *       *
 
 user@host $ python -m emissary.run -c feeds.txt
 Using API key "Primary".
