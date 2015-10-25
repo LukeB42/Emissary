@@ -44,8 +44,8 @@ Some initial setup has to be done before the system will start.
 Communication with Emissary is mainly done over HTTPS connections
 and for that you're going to need an SSL certificate and a key:
 
-user@host $ openssl genrsa 1024 > key
-user@host $ openssl req -new -x509 -nodes -sha1 -days 365 -key key > cert
+user@host $ openssl genrsa 4096 > key
+user@host $ openssl req -new -x509 -nodes -sha256 -days 365 -key key > cert
 
 To prevent your API keys ever getting put into version control for all
 the world to see, you need to put a database URI into the environment:
