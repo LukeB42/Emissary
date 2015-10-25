@@ -60,9 +60,6 @@ user@host $ python -m emissary.run --cert cert --key key
 
 14/06/2015 16:31:30 - Emissary - INFO - Starting Emissary 2.0.0.
 e5a59e0a-b457-45c6-9d30-d983419c43e1
-14/06/2015 16:31:31 - Emissary - ERROR - /home/luke/scripts isn't a valid system path.
-14/06/2015 16:31:31 - Emissary - INFO - Primary: Processing feed groups.
-14/06/2015 16:31:31 - Emissary - INFO - Binding to 0.0.0.0:6362
 ^That UUID is your Primary API key. Add it to this example crontab:
 
 user@host $ cat feeds.txt
@@ -91,9 +88,9 @@ Psybernetics 2015
 
 (3,204) > help
 
+</pre>
 Check the included hello.py in the scripts/ directory for hints
 about pre-store scripts.
-</pre>
 
 If the prospect of creating an NSA profile of your reading habits is
 something that rightfully bothers you then my advice is to subscribe
