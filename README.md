@@ -1,7 +1,7 @@
 Emissary
 ========
 
-An intelligence test for researchers, programmers and generally carnivorous primates who want personally curated news archives.
+An intelligence utility / test for researchers, programmers and generally carnivorous primates who want personally curated news archives.
 Emissary is a web content extractor that has a RESTful API and a scripting system.
 Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
 
@@ -58,7 +58,6 @@ Protip: Put that last line in your shells' rc file.
 Start an instance in the foreground to obtain your first API key:
 
 user@host $ python -m emissary.run --cert cert --key key
-
 14/06/2015 16:31:30 - Emissary - INFO - Starting Emissary 2.0.0.
 e5a59e0a-b457-45c6-9d30-d983419c43e1
 ^That UUID is your Primary API key. Add it to this example crontab:
@@ -88,8 +87,6 @@ Psybernetics 2015
 (3,204) > help
 
 </pre>
-Check the included hello.py in the scripts/ directory for hints
-about pre-store scripts.
 
 If the prospect of creating an NSA profile of your reading habits is
 something that rightfully bothers you then my advice is to subscribe
