@@ -96,7 +96,7 @@ def uid():
 	millis = int(round(time.time() * 1000))
 	dt = datetime.datetime.now()
 	millis = str(millis)+str(dt.microsecond)
-	return str(base64.b64encode(millis)).strip('==')[-10:] # Adjust slicing to suit
+	return str(base64.b64encode(millis)).strip('==')[-15:] # Adjust slicing to suit
 
 def tconv(seconds):
     minutes, seconds = divmod(seconds, 60)
