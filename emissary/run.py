@@ -81,8 +81,8 @@ def export_crontab(filename):
 
 if __name__ == "__main__":
 	prog = "Emissary"
-	description = "A cronlike program for indexing HTTP resources."
-	epilog = "Psybernetics %s" % time.asctime().split()[-1]
+	description = "A microservice for archiving the news."
+	epilog = "Psybernetics %s." % time.asctime().split()[-1]
 	parser = optparse.OptionParser(prog=prog,version=app.version,description=description,epilog=epilog)
 
 	parser.set_usage('python -m emissary.run [options]')

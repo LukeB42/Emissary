@@ -1,4 +1,7 @@
-# This file provides the HTTP endpoints for operating on feeds
+"""
+This file determines how articles are accessed.
+Yoy may also want to examine the Article class in emissary/models.py
+"""
 from emissary import db
 from flask import request
 from sqlalchemy import desc, and_
