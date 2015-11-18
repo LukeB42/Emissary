@@ -108,7 +108,10 @@ class Articles(Pane):
 						statuspane.status = str(status)
 					else:
 						self.reader.article = article
-						self.reader.data = article['content']
+                        if article['content'] == None:
+                            self.reader.data = ""
+                        else:
+    						self.reader.data = article['content']
 						self.reader.active = True
 						self.active = False
 
