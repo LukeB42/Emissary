@@ -173,7 +173,7 @@ class Reader(Pane):
 
     def update(self):
         if self.article:
-            feed = self.article['feed']
+            feed = self.article.get('feed', None)
             heading = "%s\n%s (%s ago)\n%s\n\n" % \
                 (self.article['title'].encode("ascii","ignore"), feed if feed else "",
                 tconv(int(time.time()) - int(self.article['created'])),
