@@ -172,6 +172,7 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
     duration = tconv(now-then)
     log('%s: %s/%s: Stored %s "%s" (%s)' % \
         (feed.key.name, feed.group.name, feed.name, article.uid, article.title, duration))
+    del then, now, duration, feed, article, url, title
     return
 
 def fetch_feedless_article(key, url, overwrite=False):
@@ -245,3 +246,4 @@ def commit_to_feed(feed, article):
     session.add(article)
     session.add(feed)
     session.commit()
+    del article, feed, session
