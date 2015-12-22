@@ -203,14 +203,20 @@ class Reader(Pane):
             articles.active = True
             self.active = False
 
+        elif character in [70, 102]:               # f/F to fullscreen the pager
+            articles = self.window.get("articles")
+            if articles.hidden:
+                articles.hidden = False
+            else:
+                articles.hidden = True
+
 class StatusLine(Pane):
     geometry = [EXPAND, 1]
     content = []
     buffer = ""
     status = ""
     searching = False
-#    tagline = "Psybernetics %s." % time.asctime().split()[-1]
-    tagline = "Thanks God"
+    tagline = "Psybernetics %s." % time.asctime().split()[-1]
 
     def update(self):
         if self.searching:
@@ -262,23 +268,17 @@ window = Window(blocking=True)
 feedgroups = FeedGroups("feedgroups")
 feedgroups.active = False
 feedgroups.hidden = True
-
-feeds      = Feeds("feeds")
-feeds.active = False
-feeds.hidden = True
-
-articles   = Articles("articles")
-
-reader     = Reader("reader")
-reader.wrap= True
-reader.active = False
-
+feeds             = Feeds("feeds")
+feeds.active      = False
+feeds.hidden      = True
+articles          = Articles("articles")
+reader            = Reader("reader")
+reader.wrap       = True
+reader.active     = False
 articles.reader = reader
+status = StatusLine("status")
 
-
-status     = StatusLine("status")
-
-panes = [feedgroups,feeds,articles,reader]
+panes = [feedgroups, feeds, articles, reader]
 window.add(panes)
 window.add(status)
 
