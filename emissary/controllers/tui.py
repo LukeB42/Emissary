@@ -97,7 +97,7 @@ class Articles(Pane):
 
     def process_input(self, character):
         # Handle the return key and the right arrow key
-        if character == 10 or character == 13 or character == 261:
+        if character in [10, 13, 261]:
             for i, item in enumerate(self.items):
                 if item[0]:    
                     uid = item[2]
@@ -111,7 +111,7 @@ class Articles(Pane):
                         if article['content'] == None:
                             self.reader.data = ""
                         else:
-                            self.reader.data = article['content']
+                            self.reader.data = article['content'].encode("ascii", "ignore")
                         self.reader.active = True
                         self.active = False
 
