@@ -9,7 +9,6 @@ Docs available [here](http://docs.psybernetics.org/).
 
 --------
 ![Alt text](doc/emissary4.png?raw=true "ncurses Client")
-![Alt text](doc/emissary5.png?raw=true "ncurses programmatic access")
 ![Alt text](doc/emissary3.png?raw=true "Feed Groups")
 ![Alt text](doc/emissary2.png?raw=true "Articles")
 <pre>
@@ -93,3 +92,5 @@ If the prospect of creating an NSA profile of your reading habits is
 something that rightfully bothers you then my advice is to subscribe
 to many things and then use Emissary to read the things that really 
 interest you.
+
+![Alt text](doc/emissary5.png?raw=true "ncurses programmatic access")
