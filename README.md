@@ -95,9 +95,9 @@ Check the included hello.py in the scripts/ directory for hints
 about pre-store scripts.
 </pre>
 
-![Alt text](doc/emissary5.png?raw=true "ncurses programmatic access")
-
 If the prospect of creating an NSA profile of your reading habits is
 something that rightfully bothers you then my advice is to subscribe
 to many things and then use Emissary to read the things that really 
 interest you.
+
+![Alt text](doc/emissary5.png?raw=true "ncurses programmatic access")
