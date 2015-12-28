@@ -175,9 +175,9 @@ class Reader(Pane):
     def update(self):
         if self.article:
             feed = self.article.get('feed', None)
-            heading = "%s\n%s (%s ago)\n%s\n\n" % \
+            heading = "%s\n%s (%s %s ago)\n%s\n\n" % \
                 (self.article['title'].encode("ascii","ignore"), feed if feed else "",
-                tconv(int(time.time()) - int(self.article['created'])),
+                self.article['uid'], tconv(int(time.time()) - int(self.article['created'])),
                 self.article['url'])
             self.change_content(0, heading)
         self.outbuffer = self.data.split('\n')[self.position:]
@@ -230,23 +230,35 @@ class StatusLine(Pane):
 
     def process_input(self, character):
         self.window.window.clear()
-        if not self.searching and character == 58: # : to enter a repl
-            try:
-                import pprint
-                from ptpython.repl import embed
+        if not self.searching and character in [80, 112]: # p/P to enter a python REPL
+            try:                                          # You might need to
+                import pprint                             # "sudo pip install ptpython"
+                from ptpython.repl import embed           # to enable this feature.
+                
                 def configure(repl):
-                    repl._current_code_style_name       = "native"
                     repl.prompt_style                   = "ipython"
                     repl.vi_mode                        = True
                     repl.confirm_exit                   = False
-                    repl.show_line_numbers              = True
                     repl.show_status_bar                = False
+                    repl.show_line_numbers              = True
                     repl.show_sidebar_help              = False
                     repl.highlight_matching_parenthesis = True
+                    repl.use_code_colorscheme("native")
+
+                def a(uid):
+                    """
+                    Return raw article text given an article uid.
+                    """
+                    response = self.window.c.get("articles/%s" % uid)
+                    if response[1] == 200:
+                        return response[0]['content']
+                    return ""
+                
                 p = pprint.PrettyPrinter()
                 p = p.pprint
-                l = {"p": p, "c": self.window.c, "window": self.window}
+                l = {"a": a, "c": self.window.c, "p": p, "window": self.window}
                 self.window.stop()
+                print("\n^D to exit.")
                 embed(locals=l, configure=configure)
                 self.window.start()
             except ImportError:
@@ -260,9 +272,9 @@ class StatusLine(Pane):
 
         if self.searching:
             self.window.window.clear()
-            if character == 23 and self.buffer:      # Clear buffer on ^W
+            if character == 23 and self.buffer:    # Clear buffer on ^W
                 self.buffer = ''
-            elif character == 263:                   # Handle backspace
+            elif character == 263:                 # Handle backspace
                 if self.buffer:
                     self.buffer = self.buffer[:-1]
                 if not self.buffer:
@@ -308,4 +320,4 @@ panes = [feedgroups, feeds, articles, reader]
 window.add(panes)
 window.add(status)
 
-window.exit_keys.append(4)
+window.exit_keys.append(4) # ^D to exit
