@@ -119,8 +119,9 @@ class Articles(Pane):
             self.fetch_items()
 
         elif character == 9:               # tab to reader
-            self.reader.active = True
-            self.active = False
+            reader = self.window.get("reader")
+            reader.active = True
+            self.active   = False
 
         # Handle navigating the menu
         elif character in [259, 258, 339, 338]:
@@ -198,7 +199,7 @@ class Reader(Pane):
             if not self.position + self.height > len(self.data.split('\n')):
                 self.position += self.height
 
-        elif character == 260 or character == 9:   # Left arrow or tab
+        elif character in [260, 9]:                # Left arrow or tab
             articles = self.window.get("articles")
             articles.active = True
             self.active = False
@@ -229,11 +230,34 @@ class StatusLine(Pane):
 
     def process_input(self, character):
         self.window.window.clear()
+        if not self.searching and character == 58: # : to enter a repl
+            try:
+                import pprint
+                from ptpython.repl import embed
+                def configure(repl):
+                    repl._current_code_style_name       = "borland"
+                    repl.prompt_style                   = "ipython"
+                    repl.vi_mode                        = True
+                    repl.confirm_exit                   = False
+                    repl.show_line_numbers              = True
+                    repl.show_status_bar                = False
+                    repl.show_sidebar_help              = False
+                    repl.highlight_matching_parenthesis = True
+                p = pprint.PrettyPrinter()
+                p = p.pprint
+                l = {"p": p, "c": self.window.c, "window": self.window}
+                self.window.stop()
+                embed(locals=l, configure=configure)
+                self.window.start()
+            except ImportError:
+                pass
+
         if not self.searching and character == 47: # / to search
             articles = self.window.get("articles")
             articles.active = False
             self.searching = True
             return
+
         if self.searching:
             self.window.window.clear()
             if character == 23 and self.buffer:      # Clear buffer on ^W
@@ -251,6 +275,8 @@ class StatusLine(Pane):
                 self.searching = False
                 articles = self.window.get("articles")
                 articles.active = True
+                reader   = self.window.get("reader")
+                reader.active = False
                 self.buffer = ""
             else:
                 try: self.buffer += chr(character)     # Append input to buffer
@@ -275,7 +301,7 @@ articles          = Articles("articles")
 reader            = Reader("reader")
 reader.wrap       = True
 reader.active     = False
-articles.reader = reader
+articles.reader   = reader
 status = StatusLine("status")
 
 panes = [feedgroups, feeds, articles, reader]
