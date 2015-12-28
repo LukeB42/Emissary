@@ -235,7 +235,7 @@ class StatusLine(Pane):
                 import pprint
                 from ptpython.repl import embed
                 def configure(repl):
-                    repl._current_code_style_name       = "borland"
+                    repl._current_code_style_name       = "native"
                     repl.prompt_style                   = "ipython"
                     repl.vi_mode                        = True
                     repl.confirm_exit                   = False
