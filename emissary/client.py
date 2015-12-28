@@ -60,14 +60,5 @@ class Client(object):
 	def keys(self, type='GET', body={}, headers={}):
 		return self._send_request("keys", type, body, headers)
 
-	def users(self, type='GET', body={}, headers={}):
-		return self._send_request("users", type, body, headers)
-
-	def roles(self, type='GET', body={}, headers={}):
-		return self._send_request("roles", type, body, headers)
-
-	def privs(self, type='GET', body={}, headers={}):
-		return self._send_request("privs", type, body, headers)
-
 	def __repr__(self):
 		return "<API Client for %s>" % self.base
