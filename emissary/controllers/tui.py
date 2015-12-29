@@ -243,7 +243,7 @@ class StatusLine(Pane):
                     repl.show_line_numbers              = True
                     repl.show_sidebar_help              = False
                     repl.highlight_matching_parenthesis = True
-                    repl.use_code_colorscheme("bw")
+                    repl.use_code_colorscheme("native")
 
                 def a(uid):
                     """
@@ -257,6 +257,11 @@ class StatusLine(Pane):
                 p = pprint.PrettyPrinter()
                 p = p.pprint
                 l = {"a": a, "c": self.window.c, "p": p, "window": self.window}
+                reader  = self.window.get("reader")
+                article = getattr(reader, "article", None)
+                if article:
+                    l['article'] = article
+
                 self.window.stop()
                 print("\n^D to exit.")
                 embed(locals=l, configure=configure)
