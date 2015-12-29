@@ -243,7 +243,7 @@ class StatusLine(Pane):
                     repl.show_line_numbers              = True
                     repl.show_sidebar_help              = False
                     repl.highlight_matching_parenthesis = True
-                    repl.use_code_colorscheme("native")
+                    repl.use_code_colorscheme("bw")
 
                 def a(uid):
                     """
