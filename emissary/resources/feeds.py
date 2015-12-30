@@ -11,171 +11,170 @@ from emissary.controllers.cron import CronError, parse_timings
 
 class FeedResource(restful.Resource):
 
-	@gzipped
-	def get(self, groupname, name):
-		"""
-		 Review a feed.
-		"""
-		key = auth()
+    @gzipped
+    def get(self, groupname, name):
+        """
+         Review a feed.
+        """
+        key = auth()
 
-		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
-		if feed:
-			return feed.jsonify()
-		restful.abort(404)
+        feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+        if feed:
+            return feed.jsonify()
+        restful.abort(404)
 
-	@gzipped
-	def post(self, groupname, name):
-		"""
-		 Modify an existing feed.
-		"""
-		key = auth(forbid_reader_keys=True)
+    @gzipped
+    def post(self, groupname, name):
+        """
+         Modify an existing feed.
+        """
+        key = auth(forbid_reader_keys=True)
 
-		parser = restful.reqparse.RequestParser()
-		parser.add_argument("name",type=str, help="")
-		parser.add_argument("group",type=str, help="")
-		parser.add_argument("url",type=str, help="")
-		parser.add_argument("schedule",type=str, help="")
-		parser.add_argument("active",type=bool, default=None, help="Feed is active")
-		args = parser.parse_args()
+        parser = restful.reqparse.RequestParser()
+        parser.add_argument("name",type=str, help="")
+        parser.add_argument("group",type=str, help="")
+        parser.add_argument("url",type=str, help="")
+        parser.add_argument("schedule",type=str, help="")
+        parser.add_argument("active",type=bool, default=None, help="Feed is active")
+        args = parser.parse_args()
 
-		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
-		if not feed:
-			restful.abort(404)
+        feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
+        if not feed:
+            restful.abort(404)
 
-		if args.name:
-			if Feed.query.filter(and_(Feed.key == key, Feed.name == args.name)).first():
-				return {"message":"A feed already exists with this name."}, 304
-			feed.name = args.name
+        if args.name:
+            if Feed.query.filter(and_(Feed.key == key, Feed.name == args.name)).first():
+                return {"message":"A feed already exists with this name."}, 304
+            feed.name = args.name
 
-		if args.group:
-			pass
+        if args.group:
+            pass
 
-		if args.active != None:
-			feed.active = args.active
+        if args.active != None:
+            feed.active = args.active
 
-		if args.url:
-			feed.url = args.url
+        if args.url:
+            feed.url = args.url
 
-		if args.schedule:
-			try:
-				parse_timings(args.schedule)
-			except CronError, err:
-				return {"message": err.message}, 500
-			feed.schedule = args.schedule
+        if args.schedule:
+            try:
+                parse_timings(args.schedule)
+            except CronError, err:
+                return {"message": err.message}, 500
+            feed.schedule = args.schedule
 
-		db.session.add(feed)
-		db.session.commit()
+        db.session.add(feed)
+        db.session.commit()
 
-		if args.url or args.schedule:
-			app.inbox.put([0, "stop", [feed.key, feed.name]])
-			app.inbox.put([0, "start", [feed.key, feed.name]])
-			
-		return feed.jsonify()
+        if args.url or args.schedule:
+            app.inbox.put([0, "stop", [feed.key, feed.name]])
+            app.inbox.put([0, "start", [feed.key, feed.name]])
+            
+        return feed.jsonify()
 
-	@gzipped
-	def delete(self, groupname, name):
-		"""
-		 Halt and delete a feed.
-		 Default to deleting its articles.
-		"""
-		key = auth(forbid_reader_keys=True)
-		feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
-		if not feed:
-			restful.abort(404)
-		app.inbox.put([0, "stop", [key, feed.name]])
-		app.log('%s: %s: Deleting feed "%s".' % (feed.key.name, feed.group.name, feed.name))
-		for a in feed.articles:
-			db.session.delete(a)
+    @gzipped
+    def delete(self, groupname, name):
+        """
+         Halt and delete a feed.
+         Default to deleting its articles.
+        """
+        key = auth(forbid_reader_keys=True)
+        feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
+        if not feed:
+            restful.abort(404)
+        app.inbox.put([0, "stop", [key, feed.name]])
+        app.log('%s: %s: Deleting feed "%s".' % (feed.key.name, feed.group.name, feed.name))
+        for a in feed.articles:
+            db.session.delete(a)
 
-		db.session.delete(feed)
-		db.session.commit()
+        db.session.delete(feed)
+        db.session.commit()
 
-		return {}
+        return {}
 
 class FeedArticleCollection(restful.Resource):
 
-	def get(self, groupname, name):
-		"""
-		 Review the articles for a specific feed on this key.
-		"""
-		key = auth()
+    def get(self, groupname, name):
+        """
+         Review the articles for a specific feed on this key.
+        """
+        key = auth()
 
-		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
-		if not feed: abort(404)
+        feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+        if not feed: abort(404)
 
-		per_page = 10
+        parser = restful.reqparse.RequestParser()
+        parser.add_argument("page",type=int, help="", required=False, default=1)
+        parser.add_argument("per_page",type=int, help="", required=False, default=10)
+        parser.add_argument("content",type=bool, help="", required=False, default=None)
+        args = parser.parse_args()
 
-		parser = restful.reqparse.RequestParser()
-		parser.add_argument("page",type=int, help="", required=False, default=1)
-		parser.add_argument("content",type=bool, help="", required=False, default=None)
-		args = parser.parse_args()
+        # Return a list of the JSONified Articles ordered by descending creation date and paginated.
+        if args.content == True:
+            query = Article.query.filter(and_(Article.key == key, Article.content != None, Article.feed == feed))\
+                    .order_by(desc(Article.created)).paginate(args.page, args.per_page)
 
-		# Return a list of the JSONified Articles ordered by descending creation date and paginated.
-		if args.content == True:
-			query = Article.query.filter(and_(Article.key == key, Article.content != None, Article.feed == feed))\
-					.order_by(desc(Article.created)).paginate(args.page, per_page)
+            return make_response(request.url, query)
 
-			return make_response(request.url, query)
+        elif args.content == False:
+            query = Article.query.filter(and_(Article.key == key, Article.content == None, Article.feed == feed))\
+                    .order_by(desc(Article.created)).paginate(args.page, args.per_page)
 
-		elif args.content == False:
-			query = Article.query.filter(and_(Article.key == key, Article.content == None, Article.feed == feed))\
-					.order_by(desc(Article.created)).paginate(args.page, per_page)
+            return make_response(request.url, query)
 
-			return make_response(request.url, query)
+        query = Article.query.filter(and_(Article.key == key, Article.feed == feed))\
+                .order_by(desc(Article.created)).paginate(args.page, args.per_page)
 
-		query = Article.query.filter(and_(Article.key == key, Article.feed == feed))\
-				.order_by(desc(Article.created)).paginate(args.page, per_page)
-
-		return make_response(request.url, query)
+        return make_response(request.url, query)
 
 class FeedSearch(restful.Resource):
 
-	def get(self, groupname, name, terms):
-		"""
-		Search for articles within a feed.
-		"""
-		key = auth()
+    def get(self, groupname, name, terms):
+        """
+        Search for articles within a feed.
+        """
+        key = auth()
 
-		parser = restful.reqparse.RequestParser()
-		parser.add_argument("page",type=int, help="", required=False, default=1)
-		parser.add_argument("per_page",type=int, help="", required=False, default=10)
-#		parser.add_argument("content",type=bool, help="", required=False, default=None)
-		args = parser.parse_args()
+        parser = restful.reqparse.RequestParser()
+        parser.add_argument("page",type=int, help="", required=False, default=1)
+        parser.add_argument("per_page",type=int, help="", required=False, default=10)
+#        parser.add_argument("content",type=bool, help="", required=False, default=None)
+        args = parser.parse_args()
 
-		fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
-		if not fg:
-			restful.abort(404)
+        fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
+        if not fg:
+            restful.abort(404)
 
-		f = [f for f in fg.feeds if f.name == name]
-		if not f: abort(404)
+        f = [f for f in fg.feeds if f.name == name]
+        if not f: abort(404)
 
-		f = f[0]
+        f = f[0]
 
-		query = Article.query.filter(
-				and_(Article.feed == f, Article.title.like("%" + terms + "%")))\
-				.order_by(desc(Article.created)).paginate(args.page, args.per_page)
+        query = Article.query.filter(
+                and_(Article.feed == f, Article.title.like("%" + terms + "%")))\
+                .order_by(desc(Article.created)).paginate(args.page, args.per_page)
 
-		return make_response(request.url, query)
+        return make_response(request.url, query)
 
 class FeedStartResource(restful.Resource):
 
-	def post(self, groupname, name):
-		key = auth(forbid_reader_keys=True)
+    def post(self, groupname, name):
+        key = auth(forbid_reader_keys=True)
 
-		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
-		if feed:
-			app.inbox.put([0, "start", [key, feed.name]])
-			return feed.jsonify()
-		restful.abort(404)
+        feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+        if feed:
+            app.inbox.put([0, "start", [key, feed.name]])
+            return feed.jsonify()
+        restful.abort(404)
 
 class FeedStopResource(restful.Resource):
 
-	def post(self, groupname, name):
-		key = auth(forbid_reader_keys=True)
+    def post(self, groupname, name):
+        key = auth(forbid_reader_keys=True)
 
-		feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
-		if feed:
-			app.inbox.put([0, "stop", [key, feed.name]])
-			return feed.jsonify()
-		restful.abort(404)
+        feed = Feed.query.filter(and_(Feed.name == name, Feed.key == key)).first()
+        if feed:
+            app.inbox.put([0, "stop", [key, feed.name]])
+            return feed.jsonify()
+        restful.abort(404)
 
