@@ -66,7 +66,7 @@ user@host $ cat feeds.txt
 apikey: your-api-key-here
 
 # url                                                 name            group            minute  hour    day     month   weekday
-http://news.ycombinator.com/rss                       "HN"            "HN"             15!     *       *       *       *
+http://news.ycombinator.com/rss                       "HN"            "HN"             */15    *       *       *       *
 http://phys.org/rss-feed/                             "Phys.org"      "Phys.org"       1       12      *       *       *
 http://feeds.nature.com/news/rss/most_recent          "Nature"        "Nature"         30      13      *       *       *
 
