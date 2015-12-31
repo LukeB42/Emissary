@@ -77,7 +77,6 @@ def parse_timings(timings):
                 if j.isdigit():
                     s += j
             s = int(s)
-#            s=int(v[:-1])
             if i == 0: minute  = range(0,60,s)
             if i == 1: hour    = range(0,24,s)
             if i == 2: day     = range(0,32,s)
