@@ -1,7 +1,6 @@
-"""
-This file determines how articles are accessed.
-Yoy may also want to examine the Article class in emissary/models.py
-"""
+# _*_ coding: utf-8 _*_
+# This file determines how articles are accessed.
+# You may also want to examine the Article class in emissary/models.py
 from emissary import db
 from flask import request
 from flask.ext import restful
@@ -9,10 +8,11 @@ from sqlalchemy import desc, and_
 from emissary.models import Article
 from emissary.resources.api_key import auth
 from emissary.controllers.fetch import fetch_feedless_article
-from emissary.controllers.utils import gzipped, make_response
+from emissary.controllers.utils import make_response, gzipped, cors
 
 class ArticleCollection(restful.Resource):
 
+    @cors
     def get(self):
         """
          Review all articles associated with this key.
@@ -20,9 +20,9 @@ class ArticleCollection(restful.Resource):
         key = auth()
 
         parser = restful.reqparse.RequestParser()
-        parser.add_argument("page",type=int, help="", required=False, default=1)
-        parser.add_argument("per_page",type=int, help="", required=False, default=10)
-        parser.add_argument("content",type=bool, help="", required=False, default=None)
+        parser.add_argument("page",     type=int,  default=1)
+        parser.add_argument("per_page", type=int,  default=10)
+        parser.add_argument("content",  type=bool, default=None)
         args = parser.parse_args()
 
         # Construct a query for  Articles ordered by descending creation date and paginated.
@@ -39,7 +39,8 @@ class ArticleCollection(restful.Resource):
         # Attach links to help consuming applications
         response = make_response(request.url, query)
         return response
-
+    
+    @cors
     def put(self):
         """
          Fetch an article without an associated feed.
@@ -47,7 +48,7 @@ class ArticleCollection(restful.Resource):
         key = auth()
  
         parser = restful.reqparse.RequestParser()
-        parser.add_argument("url",type=str, help="", required=True)
+        parser.add_argument("url", type=str, required=True)
         args = parser.parse_args()
 
         try:
@@ -57,10 +58,12 @@ class ArticleCollection(restful.Resource):
 
         if not article:
             return {"Error": "This URL has already been stored."}, 304
+
         return article.jsonify(), 201
 
 class ArticleSearch(restful.Resource):
 
+    @cors
     def get(self, terms):
         """
          The /v1/articles/search/<terms> endpoint.
@@ -68,9 +71,9 @@ class ArticleSearch(restful.Resource):
         key = auth()
 
         parser = restful.reqparse.RequestParser()
-        parser.add_argument("page",type=int, help="", required=False, default=1)
-        parser.add_argument("per_page",type=int, help="", required=False, default=10)
-        parser.add_argument("content",type=bool, help="", required=False, default=None)
+        parser.add_argument("page",     type=int, help="",  default=1)
+        parser.add_argument("per_page", type=int, help="",  default=10)
+        parser.add_argument("content",  type=bool, help="", default=None)
         args = parser.parse_args()
 
         if args.content == True:
@@ -111,6 +114,7 @@ class ArticleSearch(restful.Resource):
 
 class ArticleResource(restful.Resource):
 
+    @cors
     def get(self, uid):
         """
          Read an article.
@@ -123,6 +127,7 @@ class ArticleResource(restful.Resource):
 
         restful.abort(404)
 
+    @cors
     @gzipped
     def delete(self, uid):
         """
@@ -140,6 +145,7 @@ class ArticleResource(restful.Resource):
 
 class ArticleCount(restful.Resource):
 
+    @cors
     def get(self):
         """
          Return the amount of articles belonging to an API key.
