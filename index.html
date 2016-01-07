@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Emissary 2.0.0 Manual</title>
+    <title>Emissary 2.1.0 Manual</title>
 
     <link href="stylesheets/screen.css" rel="stylesheet" type="text/css" media="screen" />
     <link href="stylesheets/print.css" rel="stylesheet" type="text/css" media="print" />
@@ -53,7 +53,7 @@
     </span><span class="s2">"group"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Reuters"</span><span class="p">,</span><span class="w"> 
     </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Reuters UK"</span><span class="p">,</span><span class="w"> 
     </span><span class="s2">"running"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> 
-    </span><span class="s2">"schedule"</span><span class="p">:</span><span class="w"> </span><span class="s2">"15! * * * *"</span><span class="p">,</span><span class="w"> 
+    </span><span class="s2">"schedule"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*/15 * * * *"</span><span class="p">,</span><span class="w"> 
     </span><span class="s2">"uid"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NjEzNTYwMA"</span><span class="p">,</span><span class="w"> 
     </span><span class="s2">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://uk.reuters.com"</span><span class="w">
 </span><span class="p">}</span><span class="w">
@@ -91,9 +91,9 @@ for browsing at your leisure.</p>
 <p>Communicating with the API is done over HTTPS, and for this you&rsquo;ll need a certificate and a key.
 These can be quickly generated with the following two commands:</p>
 
-<p><code>openssl genrsa 1024 &gt; key</code></p>
+<p><code>openssl genrsa 4096 &gt; key</code></p>
 
-<p><code>openssl req -new -x509 -nodes -sha1 -days 365 -key key &gt; cert</code></p>
+<p><code>openssl req -new -x509 -nodes -sha256 -days 365 -key key &gt; cert</code></p>
 
 <h2 id="database-uri">Database URI</h2>
 
@@ -112,8 +112,8 @@ your API keys out of any version-control system you might be using if you&rsquo;
 
 <pre>
 user@host $ python -m emissary.run --cert cert --key key
-14/06/2015 16:31:30 - Emissary - INFO - Starting Emissary 2.0.0.
-5a59e0a-b457-45c6-9d30-d983419c43e1
+14/06/2015 16:31:30 - Emissary - INFO - Starting Emissary 2.1.0.
+ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff
 </pre>
 
 <p>After following the prior steps you&rsquo;re ready to run the server component for the first time.
@@ -132,8 +132,8 @@ with the database URI in the environment.</p>
 apikey: your-api-key-here
 
 # url                                                 name         group     minute  hour    day     month   weekday
-http://news.ycombinator.com/rss                       "HN"         "HN"      20!     *       *       *       *
-http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       3!      *       *       *
+http://news.ycombinator.com/rss                       "HN"         "HN"      */20    *       *       *       *
+http://mf.feeds.reuters.com/reuters/UKdomesticNews    "Reuters UK" "Reuters" 0       */3     *       *       *
 </pre>
 
 <p>Cron table files can operate on multiple API keys and will create groups and feeds if they don&rsquo;t already exist.</p>
@@ -153,7 +153,7 @@ updating a local instance via file or a remote instance in a different country.<
  minute  hour    day month   weekday
  10!     6,12    *   0-11    mon-sun
  30      9       20  feb     mon
- 1       6!      2!  *       *
+ 1       */6     2!  *       *
 </pre>
 
 <p>Examine the example provided to see how schedules can be formed.</p>
@@ -172,7 +172,7 @@ Usage: python -m emissary.run [options]
   --version             show program's version number and exit
   -h, --help            show this help message and exit
   -c, --crontab         Crontab to parse
-  --export-crontab      Write database arrangement to file
+  --export              Write database arrangement to file
   --config              (defaults to emissary.config)
   -a, --address         (defaults to 0.0.0.0)
   -p PORT, --port       (defaults to 6362)
@@ -199,7 +199,7 @@ This facilitates rapid development of post-receive components.</p>
 
 <h1 id="api-reference">API Reference</h1>
 
-<p>You are reading the manual for Emissary 2.0.0. The current API version is 1.0.</p>
+<p>You are reading the manual for Emissary 2.1.0. The current API version is 1.1.</p>
 
 <p>All requests to this API are prefixed with <code>/v1/</code>.</p>
 
@@ -314,14 +314,14 @@ determines whether new keys can be anonymously created.</p>
 <p><code>/v1/keys/string:name</code></p>
 
 <h2 id="put">PUT</h2>
-<pre class="highlight python"><code><span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s">'name'</span><span class="p">:</span><span class="s">'some user or department'</span><span class="p">}</span>
+<pre class="highlight python"><code><span class="n">body</span> <span class="o">=</span> <span class="p">{</span><span class="s">'name'</span><span class="p">:</span><span class="s">'some user'</span><span class="p">}</span>
 <span class="n">response</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s">'keys'</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span>
 <span class="c"># Check for 201 ("CREATED")</span>
 <span class="n">response</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="mi">201</span>
 <span class="c"># Check the contents</span>
 <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="p">{</span><span class="s">u'active'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">u'apikey'</span><span class="p">:</span> <span class="s">u'12848459-1b59-4ae6-8e63-8718d9a5d399'</span><span class="p">,</span> <span class="s">u'name'</span><span class="p">:</span> <span class="s">u'some user or department'</span><span class="p">}</span>
+<span class="p">{</span><span class="s">u'active'</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span> <span class="s">u'apikey'</span><span class="p">:</span> <span class="s">u'2147cbcb8ae15d5ce006270a93a22a2ad127fa8733b9b2106e9a92f45e66b01463d1d1035f97a12bb0bac68521b75b6fadefe44381d7148a661a3db1baecaeb8'</span><span class="p">,</span> <span class="s">u'name'</span><span class="p">:</span> <span class="s">u'some user'</span><span class="p">}</span>
 </code></pre>
 
 <p>Create new keys by telling the service what name you&rsquo;d like.</p>
@@ -390,15 +390,15 @@ Reader keys cannot make requests to <code>/v1/keys/:name</code> as this could re
 <h2 id="delete">DELETE</h2>
 
 <pre>
-(3,300) > get keys/some user or department
+(3,300) > get keys/some user
 200
 {
     "active": true,
-    "apikey": "12848459-1b59-4ae6-8e63-8718d9a5d399",
-    "name": "some user or department",
+    "apikey": "2147cbcb8ae15d5ce006270a93a22a2ad127fa8733b9b2106e9a92f45e66b01463d1d1035f97a12bb0bac68521b75b6fadefe44381d7148a661a3db1baecaeb8",
+    "name": "some user",
     "feedgroups": []
 }
-(3,302) > delete keys key=12848459-1b59-4ae6-8e63-8718d9a5d399
+(3,302) > delete keys key=2147cbcb8ae15d5ce006270a93a22a2ad127fa8733b9b2106e9a92f45e66b01463d1d1035f97a12bb0bac68521b75b6fadefe44381d7148a661a3db1baecaeb8
 204
 {}
 </pre>
@@ -768,7 +768,7 @@ Reader keys cannot make requests to <code>/v1/keys/:name</code> as this could re
 </tr>
 </tbody></table>
 
-<aside class="warning">URLs must be unique to your API key. You can&rsquo;t schedule the same URL for multiple feeds.</aside>
+<aside class="warning">URLs must be unique to your API key.<br />The same URL can&rsquo;t be scheduled for multiple feeds.</aside>
 
 <h2 id="delete">DELETE</h2>
 
@@ -919,6 +919,24 @@ Reader keys cannot make requests to <code>/v1/keys/:name</code> as this could re
 
 <p>See <a href="#retrieving-content">rerieving content</a>.</p>
 
+<h2 id="put">PUT</h2>
+
+<p>Fetch, parse and store an article without associating it with a specific feed.</p>
+<p>Requests can take longer than the default 3.5 second timeout in emissary.client</p>
+
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>url</td>
+<td>The location of the article to fetch, parse and store.</td>
+</tr>
+</tbody></table>
+
 <h2 id="delete">DELETE</h2>
 
 <p>Delete an article by ID.</p>
@@ -1059,6 +1077,20 @@ This is useful for storing database connections, implementing sampling algorithm
 <p>It can be launched with: <code>python -m emissary.repl</code></p>
 
 <p>The <code>--host</code> option can be used to specify an instance other than <em>https://localhost:6362/v1/</em>.</p>
+
+<p class="ncurses" style="text-shadow: none">
+    <br />
+    The <code>--ncurses</code> option can be used to launch an ncurses interface.<br /><br />
+    The ncurses client currently provides a list of the most recent articles.<br />
+    Articles can be selected by hitting enter or the right arrow key.<br />
+    Once selected, articles can be scrolled with the arrow keys and page up/down. The list of recent articles can be hidden by pressing <em>f</em>
+    which will full-screen the article you're currently reading.<br /><br />
+    If <code>ptpython</code> is installed then a Python REPL can be launched by hitting <em>p</em> at any time.<br />
+    The interpreter session will have any article you're currently reading available in the environment as <code>article</code>,
+    the currently active client object as <code>c</code>, a <code>pprint.PrettyPrinter().pprint</code> instance as <code>p</code> and the <code>window</code> object
+    of the ncurses client itself.
+    <br /><br />
+</p>
 
 <h3 id="setkey">SETKEY</h3>
 
