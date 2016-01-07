@@ -8,11 +8,12 @@ else:
     	os.environ['EMISSARY_DATABASE']
 	)
 
-MASTER_KEY = None
-MASTER_KEY_NAME = "Primary"
-PERMIT_NEW = False
-GZIP_HERE = True
+MASTER_KEY        = None
+MASTER_KEY_NAME   = "Primary"
+PERMIT_NEW        = False
+GZIP_HERE         = True
 COMPRESS_ARTICLES = True
+ENABLE_CORS       = False
 if "NO_DUPLICATE_TITLES" in os.environ:
 	NO_DUPLICATE_TITLES = os.environ['DUPLICATE_TITLES']
 else:

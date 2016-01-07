@@ -1,16 +1,17 @@
 # _*_ coding: utf-8 _*_
-# This file provides the HTTP endpoints for operating on feeds
+# This file provides the HTTP endpoints for operating on individual feeds
 from emissary import app, db
 from flask import request
 from flask.ext import restful
 from sqlalchemy import desc, and_
 from emissary.models import Feed, FeedGroup, Article
 from emissary.resources.api_key import auth
-from emissary.controllers.utils import gzipped, make_response
 from emissary.controllers.cron import CronError, parse_timings
+from emissary.controllers.utils import make_response, gzipped, cors
 
 class FeedResource(restful.Resource):
 
+    @cors
     @gzipped
     def get(self, groupname, name):
         """
@@ -23,6 +24,7 @@ class FeedResource(restful.Resource):
             return feed.jsonify()
         restful.abort(404)
 
+    @cors
     @gzipped
     def post(self, groupname, name):
         """
@@ -31,11 +33,11 @@ class FeedResource(restful.Resource):
         key = auth(forbid_reader_keys=True)
 
         parser = restful.reqparse.RequestParser()
-        parser.add_argument("name",type=str, help="")
-        parser.add_argument("group",type=str, help="")
-        parser.add_argument("url",type=str, help="")
-        parser.add_argument("schedule",type=str, help="")
-        parser.add_argument("active",type=bool, default=None, help="Feed is active")
+        parser.add_argument("name",     type=str)
+        parser.add_argument("group",    type=str)
+        parser.add_argument("url",      type=str)
+        parser.add_argument("schedule", type=str)
+        parser.add_argument("active",   type=bool, default=None, help="Feed is active")
         args = parser.parse_args()
 
         feed = Feed.query.filter(and_(Feed.key == key, Feed.name == name)).first()
@@ -72,6 +74,7 @@ class FeedResource(restful.Resource):
             
         return feed.jsonify()
 
+    @cors
     @gzipped
     def delete(self, groupname, name):
         """
@@ -94,6 +97,7 @@ class FeedResource(restful.Resource):
 
 class FeedArticleCollection(restful.Resource):
 
+    @cors
     def get(self, groupname, name):
         """
          Review the articles for a specific feed on this key.
@@ -104,9 +108,9 @@ class FeedArticleCollection(restful.Resource):
         if not feed: abort(404)
 
         parser = restful.reqparse.RequestParser()
-        parser.add_argument("page",type=int, help="", required=False, default=1)
-        parser.add_argument("per_page",type=int, help="", required=False, default=10)
-        parser.add_argument("content",type=bool, help="", required=False, default=None)
+        parser.add_argument("page",     type=int,  default=1)
+        parser.add_argument("per_page", type=int,  default=10)
+        parser.add_argument("content",  type=bool, default=None)
         args = parser.parse_args()
 
         # Return a list of the JSONified Articles ordered by descending creation date and paginated.
@@ -129,6 +133,7 @@ class FeedArticleCollection(restful.Resource):
 
 class FeedSearch(restful.Resource):
 
+    @cors
     def get(self, groupname, name, terms):
         """
         Search for articles within a feed.
@@ -136,9 +141,9 @@ class FeedSearch(restful.Resource):
         key = auth()
 
         parser = restful.reqparse.RequestParser()
-        parser.add_argument("page",type=int, help="", required=False, default=1)
-        parser.add_argument("per_page",type=int, help="", required=False, default=10)
-#        parser.add_argument("content",type=bool, help="", required=False, default=None)
+        parser.add_argument("page",     type=int,  default=1)
+        parser.add_argument("per_page", type=int,  default=10)
+#        parser.add_argument("content", type=bool, default=None)
         args = parser.parse_args()
 
         fg = FeedGroup.query.filter(and_(FeedGroup.key == key, FeedGroup.name == groupname)).first()
@@ -158,6 +163,7 @@ class FeedSearch(restful.Resource):
 
 class FeedStartResource(restful.Resource):
 
+    @cors
     def post(self, groupname, name):
         key = auth(forbid_reader_keys=True)
 
@@ -169,6 +175,7 @@ class FeedStartResource(restful.Resource):
 
 class FeedStopResource(restful.Resource):
 
+    @cors
     def post(self, groupname, name):
         key = auth(forbid_reader_keys=True)
 
