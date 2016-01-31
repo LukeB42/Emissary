@@ -97,11 +97,16 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
         seen[url][0] += 1
         seen[url][1] = int(time.time())
 
+    # Prune seen URLs older than four days
+    for url in seen.copy():
+        if int(time.time()) - seen[url][1] > 345600:
+            del seen[url]
+
     try:
         document = get(url)
     except Exception, e:
         log("%s: %s/%s: Error fetching %s: %s" % \
-            (feed.key.name, feed.group.name,feed.name,url,e.message[0]))
+            (feed.key.name, feed.group.name, feed.name, url, e.message[0]))
         return
 
     # Mimetype detection.
