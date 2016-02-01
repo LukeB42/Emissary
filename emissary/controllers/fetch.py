@@ -97,9 +97,9 @@ def fetch_and_store(link, feed, log, key=None, overwrite=False):
         seen[url][0] += 1
         seen[url][1] = int(time.time())
 
-    # Prune seen URLs older than four days
+    # Prune seen URLs older than a day.
     for url in seen.copy():
-        if int(time.time()) - seen[url][1] > 345600:
+        if int(time.time()) - seen[url][1] > 86400:
             del seen[url]
 
     try:
