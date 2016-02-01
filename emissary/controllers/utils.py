@@ -3,6 +3,7 @@
 # gzipping requests thanks to a snippet on pocoo.org and unique ID generation.
 import gzip
 import time
+import uuid
 import urllib
 import base64
 import hashlib
@@ -73,11 +74,7 @@ def gzipped(f):
 
     return view_func
 
-def uid():
-    millis = int(round(time.time() * 1000))
-    dt = datetime.datetime.now()
-    millis = str(millis)+str(dt.microsecond)
-    return str(base64.b64encode(millis)).strip('==')[-15:] # Adjust slicing to suit
+def uid(): return str(uuid.uuid4())
 
 def tconv(seconds):
     minutes, seconds = divmod(seconds, 60)
