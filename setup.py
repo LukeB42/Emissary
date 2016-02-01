@@ -39,7 +39,7 @@ data_files = (
     )
 
 setup(name='Emissary',
-      version="2.1.0",
+      version="2.1.1",
       description='A microservice for indexing the plain text of articles and essays',
       author='Luke Brooks',
       author_email='luke@psybernetics.org.uk',
