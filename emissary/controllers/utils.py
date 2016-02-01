@@ -2,12 +2,9 @@
 # This file defines a nifty utility for querying the database,
 # gzipping requests thanks to a snippet on pocoo.org and unique ID generation.
 import gzip
-import time
 import uuid
 import urllib
-import base64
 import hashlib
-import datetime
 import urlparse
 import functools 
 from emissary import app, db
