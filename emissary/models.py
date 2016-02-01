@@ -58,7 +58,7 @@ class FeedGroup(db.Model):
     __tablename__ = "feed_groups"
     id      = db.Column(db.Integer(), primary_key=True)
     key_id  = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
-    uid     = db.Column(db.String(20), default=uid())
+    uid     = db.Column(db.String(36), default=uid())
     name    = db.Column(db.String(80))
     feeds   = db.relationship('Feed', backref="group")
     created = db.Column(db.DateTime(timezone=True), default=db.func.now())
@@ -84,7 +84,7 @@ class Feed(db.Model):
     id       = db.Column(db.Integer(), primary_key=True)
     key_id   = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
     group_id = db.Column(db.Integer(), db.ForeignKey("feed_groups.id"))
-    uid      = db.Column(db.String(20),  default=uid())
+    uid      = db.Column(db.String(36),  default=uid())
     name     = db.Column(db.String(100))
     url      = db.Column(db.String(150))
     schedule = db.Column(db.String(80))
@@ -139,7 +139,7 @@ class Article(db.Model):
     __tablename__ = "articles"
     id         = db.Column(db.Integer(), primary_key=True)
     key_id     = db.Column(db.Integer(), db.ForeignKey("api_keys.id"))
-    uid        = db.Column(db.String(20))
+    uid        = db.Column(db.String(36))
     feed_id    = db.Column(db.Integer(), db.ForeignKey("feeds.id"))
     title      = db.Column(db.String(80))
     url        = db.Column(db.String(400))
