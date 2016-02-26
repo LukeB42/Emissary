@@ -217,7 +217,7 @@ class StatusLine(Pane):
     buffer = ""
     status = ""
     searching = False
-    tagline = "Psybernetics %s." % time.asctime().split()[-1]
+    tagline = "Thanks God."
 
     def update(self):
         if self.searching:
