@@ -5,7 +5,7 @@ An intelligence utility / test for researchers, programmers and generally carniv
 Emissary is a web content extractor that has a RESTful API and the ability to run pre-store scripts.
 Emissary stores the full text of linked articles from RSS feeds or URLs containing links.
 
-Docs available [here](http://docs.psybernetics.org/).
+Documentation available [here](http://docs.psybernetics.org/).
 
 --------
 ![Alt text](doc/emissary4.png?raw=true "ncurses Client")
