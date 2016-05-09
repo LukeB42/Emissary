@@ -89,7 +89,7 @@ for browsing at your leisure.</p>
 <h2 id="ssl">SSL</h2>
 
 <p>Communicating with the API is done over HTTPS, and for this you&rsquo;ll need a certificate and a key.
-These can be quickly generated with the following two commands:</p>
+These can be generated with the following two commands:</p>
 
 <p><code>openssl genrsa 4096 &gt; key</code></p>
 
@@ -124,7 +124,7 @@ This will generate a key based on the name defined in the config as <code>MASTER
 <p>You don&rsquo;t have to copy your key in any way or memorise it. Your Primary API key is available from the <a href="#repl">REPL</a> providing it&rsquo;s executed
 with the database URI in the environment.</p>
 
-<p>The <a href="#authenticating">Authenticating</a> section explains how these keys are used to obtain and transmit data.</p>
+<p>The <a href="#authentication">Authentication</a> section explains how these keys are used to obtain and transmit data.</p>
 
 <h2 id="crontabs">Crontabs</h2>
 
@@ -283,7 +283,7 @@ This facilitates rapid development of post-receive components.</p>
 </tr>
 </tbody></table>
 
-<h1 id="authenticating">Authenticating</h1>
+<h1 id="Authentication">Authentication</h1>
 <pre class="highlight shell"><code><span class="c"># Header control with curl</span>
 curl <span class="s2">"https://localhost:6362/v1/feeds"</span> <span class="se">\</span>
   -kH <span class="s2">"Authorization: Basic your-api-key-here"</span>
