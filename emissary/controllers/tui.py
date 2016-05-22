@@ -263,7 +263,7 @@ class StatusLine(Pane):
                     l['article'] = article
 
                 self.window.stop()
-                print("\n^D to exit.")
+                print("\nStarting REPL. ^D to exit.")
                 embed(locals=l, configure=configure)
                 self.window.start()
             except ImportError:
